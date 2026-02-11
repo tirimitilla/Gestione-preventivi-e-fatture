@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -113,13 +114,11 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           const productsWithCategories: StagedProduct[] = products.map(p => {
               const assignedCategoryName = categorizationMap.get(p.prodotto) || 'Da Assegnare';
               const categoryId = categoryNameToIdMap.get(assignedCategoryName.toLowerCase()) || api.UNCATEGORIZED_CAT_ID;
-              // FIX: Explicitly construct the object to avoid issues with spread syntax and incorrect type inference on 'p'.
               return { 
                   prodotto: p.prodotto,
                   quantita: p.quantita,
                   prezzoAcquisto: p.prezzoAcquisto,
                   prezzoVendita: p.prezzoVendita,
-// FIX: The compiler was incorrectly inferring categoryId as 'unknown'. Explicitly casting to string resolves the type error.
                   categoryId: categoryId as string, 
                   codiceProdotto: p.codiceProdotto || `N/D-${Date.now()}` 
               };
@@ -129,7 +128,6 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
       } catch (error) {
           console.error("Categorization error:", error);
           showAlert('Categorizzazione fallita. Assegna le categorie manualmente.', 'warning');
-          // FIX: Explicitly construct the object to avoid issues with spread syntax and incorrect type inference on 'p'.
           const productsWithDefaults: StagedProduct[] = products.map(p => ({
               prodotto: p.prodotto,
               quantita: p.quantita,

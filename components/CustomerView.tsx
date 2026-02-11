@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Customer, ConstructionSite, Quote, Purchase } from '../types';
 import * as api from '../services/apiService';
@@ -162,7 +163,6 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
             setSiteQuotes(prev => ({ ...prev, [newSite.id]: newQuotes }));
             setSitePurchases(prev => ({ ...prev, [newSite.id]: newPurchases }));
             
-            // Automatically generate and download PDF checklist
             if (newSite.materialeDaAcquistare.length > 0) {
                 await handleDownloadChecklist(newSite, selectedCustomer);
             }
@@ -296,7 +296,6 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
                                             </span>
                                         </summary>
                                         <div className="mt-4 pt-4 border-t space-y-6">
-                                            {/* Section 1: To-Do Materials */}
                                             <div>
                                                 <div className="flex justify-between items-center mb-2">
                                                     <h4 className="text-sm font-semibold text-gray-600 uppercase">Lista Lavori / Materiali (To-Do)</h4>
@@ -323,7 +322,6 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
                                                 </div>
                                             </div>
 
-                                            {/* Section 2: Quote History */}
                                             <div>
                                                 <h4 className="text-sm font-semibold text-gray-600 uppercase mb-2">Preventivi Associati</h4>
                                                 {isLoadingSiteDetails ? <Spinner text="Carico..." /> : (
@@ -339,7 +337,6 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
                                                 )}
                                             </div>
                                             
-                                            {/* Section 3: Purchase History */}
                                             <div>
                                                 <h4 className="text-sm font-semibold text-gray-600 uppercase mb-2">Acquisti Registrati</h4>
                                                 {isLoadingSiteDetails ? <Spinner text="Carico..." /> : (

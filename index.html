@@ -11,8 +11,8 @@
         theme: {
           extend: {
             colors: {
-              'primary-blue': '#0D47A1', // Un blu scuro e professionale
-              'primary-orange': '#F57C00', // Un arancione vibrante per gli accenti
+              'primary-blue': '#0D47A1',
+              'primary-orange': '#F57C00',
             },
           },
         },
@@ -21,17 +21,20 @@
   <script type="importmap">
 {
   "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
     "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai",
-    "jspdf": "https://esm.sh/jspdf@2.5.1",
-    "jspdf-autotable": "https://esm.sh/jspdf-autotable@3.8.2"
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4",
+    "jspdf": "https://esm.sh/jspdf@^4.1.0",
+    "jspdf-autotable": "https://esm.sh/jspdf-autotable@^5.0.7"
   }
 }
 </script>
 </head>
   <body class="bg-gray-100">
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
