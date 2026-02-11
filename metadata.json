@@ -1,0 +1,7 @@
+{
+  "name": "Gestione Preventivi e Fatture",
+  "description": "Un'applicazione moderna per la gestione dell'inventario e la creazione di preventivi e fatture, basata su un'interfaccia intuitiva e reattiva.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
