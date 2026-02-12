@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Product, Category } from '../types';
+import { Product, Category, Customer } from '../types';
 import * as api from '../services/apiService';
 import CategoryManager from './CategoryManager';
 import ProductImportControls from './ProductImportControls';
@@ -18,6 +19,7 @@ interface InventoryViewProps {
 
 const InventoryView: React.FC<InventoryViewProps> = ({ categories, setCategories, showAlert }) => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,6 +35,18 @@ const InventoryView: React.FC<InventoryViewProps> = ({ categories, setCategories
       setSelectedCategoryId(categories[0].id);
     }
   }, [categories, selectedCategoryId]);
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+        try {
+            const customers = await api.getCustomers();
+            setAllCustomers(customers);
+        } catch (error) {
+            showAlert("Errore nel caricamento dei clienti.", 'error');
+        }
+    };
+    fetchCustomers();
+  }, [showAlert]);
 
   const loadProducts = useCallback(async (categoryId: string) => {
     if (!categoryId) {
@@ -201,6 +215,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ categories, setCategories
           onClose={handleReviewSave}
           products={importData.products}
           categories={categories}
+          customers={allCustomers}
           onSave={handleReviewSave}
           showAlert={showAlert}
           signature={importData.signature}

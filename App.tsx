@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ShopInfo, Category, Product, QuoteItem } from './types';
+import { ShopInfo, Category, Product, QuoteItem, PurchaseItem } from './types';
 import * as api from './services/apiService';
 import Header from './components/Header';
 import InventoryView from './components/InventoryView';
@@ -9,25 +9,29 @@ import { AlertTriangle, CheckCircle, Info, XCircle, ChevronDown } from './compon
 import Alert from './components/Alert';
 import CustomerView from './components/CustomerView';
 import PurchaseView from './components/PurchaseView';
+import OrderMaterialsView from './components/OrderMaterialsView';
 
 enum Tab {
   Inventory,
   QuoteBuilder,
   Customers,
   Purchases,
+  OrderMaterials,
 }
 
 const tabNames = {
   [Tab.Inventory]: 'Inventario',
   [Tab.QuoteBuilder]: 'Crea Preventivo',
   [Tab.Customers]: 'Clienti e Cantieri',
-  [Tab.Purchases]: 'Materiali da Acquistare',
+  [Tab.Purchases]: 'Registra Acquisti',
+  [Tab.OrderMaterials]: 'Crea Ordine Materiali',
 };
 
 const App: React.FC = () => {
   const [shopInfo, setShopInfo] = useState<ShopInfo>({ name: '', description: '', vatRate: 22 });
   const [categories, setCategories] = useState<Category[]>([]);
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
+  const [orderItems, setOrderItems] = useState<PurchaseItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [alert, setAlert] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Inventory);
@@ -167,6 +171,13 @@ const App: React.FC = () => {
           )}
           {activeTab === Tab.Purchases && (
             <PurchaseView showAlert={showAlert} />
+          )}
+          {activeTab === Tab.OrderMaterials && (
+            <OrderMaterialsView
+              orderItems={orderItems}
+              setOrderItems={setOrderItems}
+              showAlert={showAlert}
+            />
           )}
         </div>
       </main>

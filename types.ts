@@ -40,12 +40,19 @@ export interface Customer {
   telefono: string;
 }
 
+export interface SiteMaterial {
+  productId: string;
+  quantity: number;
+  purchased: boolean;
+  dueDate?: string;
+}
+
 export interface ConstructionSite {
   id: string;
   customerId: string;
   nome: string;
   indirizzo: string;
-  materialeDaAcquistare: { text: string; purchased: boolean }[];
+  materialeDaAcquistare: SiteMaterial[];
 }
 
 export interface PurchaseItem {
@@ -74,4 +81,12 @@ export interface Quote {
   tax: number;
   total: number;
   vatRate: number; // Represents the effective VAT rate for the whole quote
+}
+
+export interface Order {
+  customerId: string;
+  siteId?: string;
+  date: string;
+  items: PurchaseItem[];
+  total: number;
 }

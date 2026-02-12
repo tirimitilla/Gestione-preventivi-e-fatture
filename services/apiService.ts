@@ -1,4 +1,5 @@
-import { ShopInfo, Category, Product, Customer, ConstructionSite, Purchase, PurchaseItem, Quote, QuoteItem } from '../types';
+
+import { ShopInfo, Category, Product, Customer, ConstructionSite, Purchase, PurchaseItem, Quote, QuoteItem, SiteMaterial } from '../types';
 
 export const UNCATEGORIZED_CAT_ID = 'cat-uncategorized';
 
@@ -27,18 +28,15 @@ let mockCustomers: Customer[] = [
 
 let mockConstructionSites: ConstructionSite[] = [
   { id: 'site-1', customerId: 'cust-1', nome: 'Ristrutturazione Appartamento', indirizzo: 'Via Garibaldi 5, Milano', materialeDaAcquistare: [
-      { text: 'Piastrelle bagno', purchased: true },
-      { text: 'Sanitari', purchased: false },
-      { text: 'Pittura bianca', purchased: false },
+      { productId: 'prod-5', quantity: 10, purchased: true, dueDate: '2024-07-10' },
+      { productId: 'prod-3', quantity: 5, purchased: false, dueDate: '2024-08-01' },
   ]},
   { id: 'site-2', customerId: 'cust-1', nome: 'Ufficio Direzionale', indirizzo: 'Piazza Duomo 1, Milano', materialeDaAcquistare: [
-      { text: 'Cartongesso', purchased: false },
-      { text: 'Faretti LED', purchased: false },
+      { productId: 'prod-4', quantity: 20, purchased: false, dueDate: '2024-06-20' }, // Overdue example
   ]},
   { id: 'site-3', customerId: 'cust-2', nome: 'Nuova Villetta', indirizzo: 'Strada del Pino 15, Pecetto Torinese', materialeDaAcquistare: [
-      { text: 'Cemento', purchased: true },
-      { text: 'Mattoni', purchased: true },
-      { text: 'Tegole', purchased: false },
+      { productId: 'prod-1', quantity: 2, purchased: true },
+      { productId: 'prod-2', quantity: 2, purchased: false, dueDate: '2024-09-15' },
   ]},
 ];
 
@@ -209,14 +207,14 @@ export const getConstructionSites = async (customerId: string): Promise<Construc
     return mockConstructionSites.filter(site => site.customerId === customerId);
 };
 
-export const addConstructionSite = async (siteData: Omit<ConstructionSite, 'id' | 'materialeDaAcquistare'> & { materialeDaAcquistare: { text: string; purchased: boolean }[] }): Promise<ConstructionSite> => {
+export const addConstructionSite = async (siteData: Omit<ConstructionSite, 'id'>): Promise<ConstructionSite> => {
     await simulateDelay(500);
     const newSite: ConstructionSite = { id: `site-${Date.now()}`, ...siteData };
     mockConstructionSites.push(newSite);
     return newSite;
 }
 
-export const updateSiteMaterials = async (siteId: string, materials: { text: string; purchased: boolean }[]): Promise<ConstructionSite> => {
+export const updateSiteMaterials = async (siteId: string, materials: SiteMaterial[]): Promise<ConstructionSite> => {
     await simulateDelay(400);
     const siteIndex = mockConstructionSites.findIndex(s => s.id === siteId);
     if (siteIndex === -1) {
