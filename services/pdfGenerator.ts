@@ -1,6 +1,6 @@
 
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import autoTable, { RowInput } from 'jspdf-autotable';
 import { Quote, Customer, ConstructionSite, ShopInfo, Product, Order } from '../types';
 
 export const generateQuotePdf = (
@@ -14,10 +14,10 @@ export const generateQuotePdf = (
     const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
     const margin = 15;
 
-    // --- Color Palette (RGB) ---
-    const primaryBlue = [13, 71, 161];
-    const primaryOrange = [245, 124, 0];
-    const darkText = [31, 41, 55]; // gray-800
+    // --- Color Palette (RGB Tuple) ---
+    const primaryBlue: [number, number, number] = [13, 71, 161];
+    const primaryOrange: [number, number, number] = [245, 124, 0];
+    const darkText: [number, number, number] = [31, 41, 55]; // gray-800
     
     // --- Header ---
     doc.setFontSize(18);
@@ -63,9 +63,9 @@ export const generateQuotePdf = (
     }
     
     // --- Table ---
-    const tableData = quote.items.map(item => [
-        { content: item.product.prodotto, styles: { fontStyle: 'bold' } },
-        item.quantity,
+    const tableData: RowInput[] = quote.items.map(item => [
+        { content: item.product.prodotto, styles: { fontStyle: 'bold' as const } },
+        item.quantity.toString(),
         `€${item.product.prezzoVendita.toFixed(2)}`,
         `€${(item.product.prezzoVendita * item.quantity).toFixed(2)}`
     ]);
@@ -140,7 +140,6 @@ export const generateQuotePdf = (
     doc.setLineWidth(0.2);
     doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
 
-    // --- Return data URI ---
     return doc.output('datauristring');
 };
 
@@ -157,8 +156,8 @@ export const generateChecklistPdf = (
 
     const productMap = new Map(allProducts.map(p => [p.id, p]));
 
-    // --- Color Palette (RGB) ---
-    const primaryBlue = [13, 71, 161];
+    // --- Color Palette (RGB Tuple) ---
+    const primaryBlue: [number, number, number] = [13, 71, 161];
 
     // --- Header ---
     doc.setFontSize(18);
@@ -191,20 +190,20 @@ export const generateChecklistPdf = (
     doc.text(`${site.indirizzo}`, margin, 68);
 
     // --- Table ---
-    const tableData: any[][] = site.materialeDaAcquistare.map(item => {
+    const tableData: RowInput[] = site.materialeDaAcquistare.map(item => {
         const product = productMap.get(item.productId);
         return [
             item.purchased ? '☑' : '☐',
             product?.codiceProdotto || 'N/D',
             product?.prodotto || 'Prodotto non trovato',
-            item.quantity,
-            '' // Empty column for notes
+            item.quantity.toString(),
+            '' 
         ];
     });
     
     if (tableData.length === 0) {
         tableData.push([
-            { content: 'Nessun materiale da ordinare specificato.', colSpan: 5, styles: { halign: 'center', fontStyle: 'italic' } }
+            { content: 'Nessun materiale da ordinare specificato.', colSpan: 5, styles: { halign: 'center', fontStyle: 'italic' as const } }
         ]);
     }
 
@@ -229,15 +228,9 @@ export const generateChecklistPdf = (
             2: { cellWidth: 'auto' },
             3: { cellWidth: 15, halign: 'center' },
             4: { cellWidth: 40 },
-        },
-        didParseCell: (data) => {
-            if (data.section === 'body' && data.column.index === 0) {
-                data.cell.styles.font = 'helvetica';
-            }
         }
     });
 
-    // --- Footer ---
     const footerY = pageHeight - 15;
     doc.setFontSize(8);
     doc.setTextColor(100);
@@ -258,8 +251,8 @@ export const generateOrderPdf = (
     const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
     const margin = 15;
 
-    const primaryBlue = [13, 71, 161];
-    const darkText = [31, 41, 55];
+    const primaryBlue: [number, number, number] = [13, 71, 161];
+    const darkText: [number, number, number] = [31, 41, 55];
 
     // --- Header ---
     doc.setFontSize(18);
@@ -298,10 +291,10 @@ export const generateOrderPdf = (
     }
     
     // --- Table ---
-    const tableData = order.items.map(item => [
+    const tableData: RowInput[] = order.items.map(item => [
         item.product.codiceProdotto,
         item.product.prodotto,
-        item.quantity,
+        item.quantity.toString(),
         `€${item.product.prezzoAcquisto.toFixed(2)}`,
         `€${(item.product.prezzoAcquisto * item.quantity).toFixed(2)}`
     ]);

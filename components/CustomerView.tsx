@@ -58,7 +58,7 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
 
     useEffect(() => {
         loadInitialData();
-    }, []);
+    }, [loadInitialData]);
 
     useEffect(() => {
         if (selectedCustomer) {
@@ -307,7 +307,7 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
                                                             <div className={`col-span-5 ${item.purchased ? 'line-through text-gray-500' : ''}`}><p className="text-sm font-medium">{product.prodotto}</p><p className="text-xs text-gray-500">Cod: {product.codiceProdotto}</p></div>
                                                             <div className="col-span-2"><input type="number" value={item.quantity} onChange={(e) => handleMaterialUpdate(site.id, index, { quantity: parseInt(e.target.value) || 1 })} className="w-16 text-sm p-1 border rounded-md"/></div>
                                                             <div className="col-span-3 flex items-center gap-1">
-                                                                {isOverdue && <AlertTriangle className="w-4 h-4 text-red-500" title="Scaduto!" />}
+                                                                {isOverdue && <AlertTriangle className="w-4 h-4 text-red-500" />}
                                                                 <div className="relative group"><CalendarIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-600" /><input type="date" value={item.dueDate || ''} onChange={(e) => handleMaterialUpdate(site.id, index, { dueDate: e.target.value })} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title="Imposta scadenza"/></div>
                                                                 {item.dueDate && <span className="text-xs text-gray-500 hidden sm:inline">{new Date(item.dueDate).toLocaleDateString('it-IT')}</span>}
                                                             </div>
