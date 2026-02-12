@@ -75,7 +75,7 @@ const PostImportReviewModal: React.FC<PostImportReviewModalProps> = ({ isOpen, o
   }, [destinationCustomerId, showAlert]);
 
   const selectedProduct = useMemo(() => {
-    if (selectedProductIndex === null) return null;
+    if (selectedProductIndex === null || editableProducts.length === 0) return null;
     return editableProducts[selectedProductIndex];
   }, [selectedProductIndex, editableProducts]);
 

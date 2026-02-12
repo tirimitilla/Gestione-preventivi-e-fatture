@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.40.0",
+    "@google/genai": "latest",
     "jspdf": "latest",
     "jspdf-autotable": "latest",
     "react": "^19.0.0",
