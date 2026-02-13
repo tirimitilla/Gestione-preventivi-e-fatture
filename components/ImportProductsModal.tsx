@@ -76,7 +76,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
       showAlert('Categorizzazione automatica in corso...', 'info');
 
       try {
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
           const availableCategories = categories.filter(c => c.id !== api.UNCATEGORIZED_CAT_ID);
 
           if (availableCategories.length === 0) {
@@ -125,9 +125,14 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           });
 
           onImportSuccess(productsWithCategories, signature);
-      } catch (error) {
+      } catch (error: any) {
           console.error("Categorization error:", error);
-          showAlert('Categorizzazione fallita. Assegna le categorie manualmente.', 'warning');
+          const errorMsg = error?.message || '';
+          if (errorMsg.includes('API_KEY') || errorMsg.includes('401') || errorMsg.includes('403')) {
+              showAlert('Errore API Key: Assicurati che la chiave sia configurata correttamente su Vercel.', 'error');
+          } else {
+              showAlert('Categorizzazione fallita. Assegna le categorie manualmente.', 'warning');
+          }
           const productsWithDefaults: StagedProduct[] = products.map(p => ({
               prodotto: p.prodotto,
               quantita: p.quantita,
@@ -181,7 +186,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
             };
         } else {
             const { data: base64Data, mimeType } = await fileToBase64(file);
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const response = await ai.models.generateContent({
                 model: 'gemini-3-flash-preview',
                 contents: { parts: [ { inlineData: { mimeType, data: base64Data } }, { text: 'Estrai il nome del fornitore, la data del documento (in formato YYYY-MM-DD), e i dettagli dei prodotti. Per ogni prodotto, fornisci nome, quantità, prezzo di acquisto, e codice se disponibile. Restituisci un singolo oggetto JSON con chiavi "fornitore", "dataDocumento", e "prodotti" (un array di oggetti).' } ] },
@@ -210,9 +215,12 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         }
 
         await runCategorizationAndFinalize(productsWithPrice, signature);
-    } catch (error) {
-        let userMessage = "Errore durante l'elaborazione del file. Riprova.";
-        if (error instanceof Error && error.message.toLowerCase().includes('api key')) userMessage = "Errore di autenticazione: la chiave API non è valida.";
+    } catch (error: any) {
+        console.error("Import error:", error);
+        let userMessage = error?.message || "Errore durante l'elaborazione del file.";
+        if (userMessage.includes('API_KEY') || userMessage.includes('401') || userMessage.includes('403')) {
+            userMessage = "Chiave API non valida o non configurata correttamente nelle impostazioni del server.";
+        }
         showAlert(userMessage, 'error');
         setIsLoading(false);
         onClose();
@@ -253,7 +261,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
     stopCamera();
     
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: { parts: [ { inlineData: { mimeType: 'image/jpeg', data: base64Data } }, { text: 'Estrai il nome del fornitore, la data del documento (in formato YYYY-MM-DD), e i dettagli dei prodotti. Per ogni prodotto, fornisci nome, quantità, prezzo di acquisto, e codice se disponibile. Restituisci un singolo oggetto JSON con chiavi "fornitore", "dataDocumento", e "prodotti" (un array di oggetti).' } ] },
@@ -281,9 +289,12 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         }
         
         await runCategorizationAndFinalize(productsWithPrice, signature);
-    } catch (error) {
-        let userMessage = "Errore durante l'analisi dell'immagine. Riprova.";
-        if (error instanceof Error && error.message.toLowerCase().includes('api key')) userMessage = "Errore di autenticazione: la chiave API non è valida.";
+    } catch (error: any) {
+        console.error("Capture error:", error);
+        let userMessage = error?.message || "Errore durante l'analisi dell'immagine.";
+        if (userMessage.includes('API_KEY') || userMessage.includes('401') || userMessage.includes('403')) {
+            userMessage = "Chiave API non valida o non configurata correttamente.";
+        }
         showAlert(userMessage, 'error');
         setIsLoading(false);
         onClose();

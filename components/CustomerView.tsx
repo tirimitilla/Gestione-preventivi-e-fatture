@@ -226,7 +226,7 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
         showAlert('Ricerca dati in corso...', 'info');
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `Trova la Partita IVA e il Codice Fiscale per l'azienda italiana "${newCustomer.ragioneSociale}". Se non trovi uno dei due valori, lascialo come stringa vuota.`;
             
             const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt,
@@ -242,9 +242,14 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
             } else {
                  showAlert('Nessun dato trovato per questa azienda.', 'warning');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Autofill error:", error);
-            showAlert("Errore durante la ricerca automatica.", 'error');
+            const errorMsg = error?.message || "";
+            if (errorMsg.includes('API_KEY') || errorMsg.includes('401') || errorMsg.includes('403')) {
+                showAlert("Errore: Chiave API non valida o mancante nelle impostazioni.", 'error');
+            } else {
+                showAlert("Errore durante la ricerca automatica.", 'error');
+            }
         } finally {
             setIsAutofilling(false);
         }
