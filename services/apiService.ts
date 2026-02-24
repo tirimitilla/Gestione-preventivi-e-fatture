@@ -4,7 +4,15 @@ import { ShopInfo, Category, Product, Customer, ConstructionSite, Purchase, Purc
 export const UNCATEGORIZED_CAT_ID = 'cat-uncategorized';
 
 // --- MOCK DATABASE ---
-let mockShopInfo: ShopInfo = { name: 'ELETTRO-CALORE IMPIANTI', description: 'VIA ELETTRICA 123, ROMA', vatRate: 22 };
+let mockShopInfo: ShopInfo = {
+  name: 'Gestione Preventivi',
+  companyName: 'ELETTRO-CALORE IMPIANTI',
+  description: 'VIA ELETTRICA 123, ROMA',
+  codiceFiscale: '00168238333 (IT)',
+  iban: 'IT 01 A 12345 67890 123456789012',
+  paymentConditions: 'Bonifico Bancario a 30 giorni.',
+  vatRate: 22
+};
 
 let mockCategories: Category[] = [
   { id: 'cat-1', name: 'Abbigliamento', profitMargin: 50, vatRate: 22 },
@@ -49,40 +57,8 @@ let mockPurchases: Purchase[] = [
     ], total: 42.50 },
 ];
 
-let mockQuotes: Quote[] = [
-    {
-        id: 'quote-seed-1',
-        quoteNumber: 'PREV-2024-001',
-        customerId: 'cust-1',
-        siteId: 'site-1',
-        date: '2024-05-10',
-        items: [
-            { product: mockProducts.find(p => p.id === 'prod-5')!, quantity: 15 },
-            { product: mockProducts.find(p => p.id === 'prod-3')!, quantity: 1 },
-        ],
-        notes: 'Lavori di ristrutturazione impianto elettrico.',
-        subtotal: 190.5,
-        tax: 24.9, // Mixed VAT
-        total: 215.4,
-        vatRate: 13.07
-    },
-    {
-        id: 'quote-seed-2',
-        quoteNumber: 'PREV-2024-002',
-        customerId: 'cust-2',
-        siteId: 'site-3',
-        date: '2024-06-01',
-        items: [
-            { product: mockProducts.find(p => p.id === 'prod-1')!, quantity: 10 },
-        ],
-        notes: 'Fornitura abbigliamento da lavoro.',
-        subtotal: 127.5,
-        tax: 28.05,
-        total: 155.55,
-        vatRate: 22
-    }
-];
-let quoteCounter = 2;
+let mockQuotes: Quote[] = [];
+let quoteCounter = 0;
 let mockDocumentHistory: string[] = [];
 // ---------------------
 
@@ -93,9 +69,9 @@ export const getHeaderInfo = async (): Promise<ShopInfo> => {
   return { ...mockShopInfo };
 };
 
-export const saveHeaderInfo = async (name: string, description: string, vatRate: number): Promise<string> => {
+export const saveHeaderInfo = async (newInfo: Omit<ShopInfo, 'name'>): Promise<string> => {
   await simulateDelay(500);
-  mockShopInfo = { name, description, vatRate };
+  mockShopInfo = { ...mockShopInfo, ...newInfo };
   return "Intestazione salvata con successo";
 };
 

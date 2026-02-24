@@ -31,6 +31,7 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ categories, quoteIt
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('');
   const [lastSavedQuote, setLastSavedQuote] = useState<Quote | null>(null);
+  const [includeVat, setIncludeVat] = useState(true);
 
   const categoryMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories]);
 
@@ -116,6 +117,9 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ categories, quoteIt
 
   const { subtotal, tax, total } = useMemo(() => {
     const newSubtotal = quoteItems.reduce((acc, item) => acc + item.product.prezzoVendita * item.quantity, 0);
+    if (!includeVat) {
+      return { subtotal: newSubtotal, tax: 0, total: newSubtotal };
+    }
     const newTax = quoteItems.reduce((acc, item) => {
         const category = categoryMap.get(item.product.categoryId);
         const vatRate = category ? category.vatRate : (shopInfo?.vatRate || 22);
@@ -124,7 +128,8 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ categories, quoteIt
     }, 0);
     const newTotal = newSubtotal + newTax;
     return { subtotal: newSubtotal, tax: newTax, total: newTotal };
-  }, [quoteItems, categoryMap, shopInfo]);
+
+  }, [quoteItems, categoryMap, shopInfo, includeVat]);
   
   const handleSaveAndPreview = async () => {
     if (!selectedCustomerId || !selectedCustomer) {
@@ -151,7 +156,8 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ categories, quoteIt
         subtotal,
         tax,
         total,
-        vatRate: effectiveVatRate
+        vatRate: effectiveVatRate,
+        includeVat: includeVat
     };
     
     try {
@@ -338,6 +344,18 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ categories, quoteIt
                         <div className="flex justify-between text-sm py-1">
                             <span>Imponibile:</span>
                             <span className="font-semibold">€{subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm py-1">
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="includeVat"
+                                    checked={includeVat}
+                                    onChange={(e) => setIncludeVat(e.target.checked)}
+                                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                />
+                                <label htmlFor="includeVat" className="ml-2">Includi I.V.A.</label>
+                            </div>
                         </div>
                         
                         <div className="flex justify-between text-sm py-1">

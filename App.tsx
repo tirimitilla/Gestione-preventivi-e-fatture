@@ -28,7 +28,15 @@ const tabNames = {
 };
 
 const App: React.FC = () => {
-  const [shopInfo, setShopInfo] = useState<ShopInfo>({ name: '', description: '', vatRate: 22 });
+  const [shopInfo, setShopInfo] = useState<ShopInfo>({
+    name: 'Gestione Preventivi',
+    companyName: '',
+    description: '',
+    codiceFiscale: '',
+    iban: '',
+    paymentConditions: '',
+    vatRate: 22
+  });
   const [categories, setCategories] = useState<Category[]>([]);
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
   const [orderItems, setOrderItems] = useState<PurchaseItem[]>([]);
@@ -75,10 +83,10 @@ const App: React.FC = () => {
     loadInitialData();
   }, [loadInitialData]);
 
-  const handleShopInfoSave = async (name: string, description: string, vatRate: number) => {
+  const handleShopInfoSave = async (newInfo: Omit<ShopInfo, 'name'>) => {
     try {
-      await api.saveHeaderInfo(name, description, vatRate);
-      setShopInfo({ name, description, vatRate });
+      await api.saveHeaderInfo(newInfo);
+      setShopInfo(prev => ({ ...prev, ...newInfo }));
       showAlert('Intestazione salvata con successo', 'success');
     } catch (error) {
       showAlert('Errore nel salvaggio dell\'intestazione', 'error');

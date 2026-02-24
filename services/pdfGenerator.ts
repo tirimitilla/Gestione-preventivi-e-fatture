@@ -23,16 +23,16 @@ export const generateQuotePdf = (
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
-    doc.text('ELETTRO-CALORE', margin, 20);
+    doc.text(shopInfo.companyName.toUpperCase(), margin, 20);
     
     doc.setTextColor(primaryOrange[0], primaryOrange[1], primaryOrange[2]);
-    doc.text('IMPIANTI', margin + doc.getTextWidth('ELETTRO-CALORE '), 20);
+    
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(darkText[0], darkText[1], darkText[2]);
     doc.text(shopInfo.description, margin, 27);
-    doc.text('Codice Fiscale: 00168238333 (IT)', margin, 32);
+    doc.text(`Codice Fiscale: ${shopInfo.codiceFiscale}`, margin, 32);
 
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
@@ -103,7 +103,7 @@ export const generateQuotePdf = (
     const rowHeight = 7;
 
     doc.setFillColor(primaryOrange[0], primaryOrange[1], primaryOrange[2]);
-    doc.rect(totalsX, totalsStartY, totalsWidth, rowHeight * 3, 'F');
+    doc.rect(totalsX, totalsStartY, totalsWidth, quote.includeVat ? rowHeight * 3 : rowHeight * 2, 'F');
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -112,12 +112,15 @@ export const generateQuotePdf = (
     doc.text('Totale Imponibile', totalsX + 5, totalsStartY + 5);
     doc.text(`€${quote.subtotal.toFixed(2)}`, valueX, totalsStartY + 5, { align: 'right' });
     
-    doc.text('Totale I.V.A.', totalsX + 5, totalsStartY + rowHeight + 5);
-    doc.text(`€${quote.tax.toFixed(2)}`, valueX, totalsStartY + rowHeight + 5, { align: 'right' });
+    if (quote.includeVat) {
+      doc.text('Totale I.V.A.', totalsX + 5, totalsStartY + rowHeight + 5);
+      doc.text(`€${quote.tax.toFixed(2)}`, valueX, totalsStartY + rowHeight + 5, { align: 'right' });
+    }
 
     doc.setFont('helvetica', 'bold');
-    doc.text('Totale Preventivo', totalsX + 5, totalsStartY + rowHeight * 2 + 5);
-    doc.text(`€${quote.total.toFixed(2)}`, valueX, totalsStartY + rowHeight * 2 + 5, { align: 'right' });
+    const totalY = quote.includeVat ? totalsStartY + rowHeight * 2 + 5 : totalsStartY + rowHeight + 5;
+    doc.text('Totale Preventivo', totalsX + 5, totalY);
+    doc.text(`€${quote.total.toFixed(2)}`, valueX, totalY, { align: 'right' });
 
     // --- Notes ---
     if (quote.notes) {
@@ -134,8 +137,8 @@ export const generateQuotePdf = (
     const footerY = pageHeight - 25;
     doc.setFontSize(8);
     doc.setTextColor(100);
-    doc.text('Condizioni di pagamento: Bonifico Bancario a 30 giorni.', margin, footerY);
-    doc.text(`IBAN: IT 01 A 12345 67890 123456789012 - ${shopInfo.name}`, margin, footerY + 4);
+    doc.text(`Condizioni di pagamento: ${shopInfo.paymentConditions}`, margin, footerY);
+    doc.text(`IBAN: ${shopInfo.iban} - ${shopInfo.companyName}`, margin, footerY + 4);
     doc.text('Grazie per la vostra fiducia.', margin, footerY + 10);
     doc.setLineWidth(0.2);
     doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);

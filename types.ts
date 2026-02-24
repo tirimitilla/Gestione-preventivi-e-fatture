@@ -1,7 +1,11 @@
 
 export interface ShopInfo {
-  name: string;
+  name: string; // This will be the main display name, like the app title
+  companyName: string; // The legal company name for documents
   description: string;
+  codiceFiscale: string;
+  iban: string;
+  paymentConditions: string;
   vatRate: number;
 }
 
@@ -81,6 +85,7 @@ export interface Quote {
   tax: number;
   total: number;
   vatRate: number; // Represents the effective VAT rate for the whole quote
+  includeVat: boolean;
 }
 
 export interface Order {

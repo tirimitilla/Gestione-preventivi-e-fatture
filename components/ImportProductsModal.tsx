@@ -72,6 +72,12 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           return;
       }
 
+      if (!process.env.API_KEY) {
+          showAlert("Errore di sistema: Chiave API non configurata nel server Vercel.", "error");
+          setIsLoading(false);
+          return;
+      }
+
       setLoadingMessage('Categorizzazione automatica in corso...');
       showAlert('Categorizzazione automatica in corso...', 'info');
 
@@ -129,7 +135,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           console.error("Categorization error:", error);
           const errorMsg = error?.message || '';
           if (errorMsg.includes('API_KEY') || errorMsg.includes('401') || errorMsg.includes('403')) {
-              showAlert('Errore API Key: Assicurati che la chiave sia configurata correttamente su Vercel.', 'error');
+              showAlert('Errore API Key: Assicurati che la chiave API_KEY sia corretta su Vercel e fai il Redeploy.', 'error');
           } else {
               showAlert('Categorizzazione fallita. Assegna le categorie manualmente.', 'warning');
           }
@@ -185,6 +191,10 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
                 }))
             };
         } else {
+            if (!process.env.API_KEY) {
+                showAlert("Chiave API mancante. Aggiungi API_KEY su Vercel e fai Redeploy.", "error");
+                setIsLoading(false); return;
+            }
             const { data: base64Data, mimeType } = await fileToBase64(file);
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const response = await ai.models.generateContent({
@@ -219,7 +229,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         console.error("Import error:", error);
         let userMessage = error?.message || "Errore durante l'elaborazione del file.";
         if (userMessage.includes('API_KEY') || userMessage.includes('401') || userMessage.includes('403')) {
-            userMessage = "Chiave API non valida o non configurata correttamente nelle impostazioni del server.";
+            userMessage = "Chiave API non valida o non configurata correttamente su Vercel (API_KEY).";
         }
         showAlert(userMessage, 'error');
         setIsLoading(false);
@@ -248,6 +258,9 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
 
   const handleCapture = async () => {
     if (!videoRef.current || !canvasRef.current) return;
+    if (!process.env.API_KEY) {
+        showAlert("Chiave API mancante. Configura API_KEY su Vercel.", "error"); return;
+    }
     setIsLoading(true);
     setLoadingMessage('Analisi immagine...');
     
@@ -293,7 +306,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         console.error("Capture error:", error);
         let userMessage = error?.message || "Errore durante l'analisi dell'immagine.";
         if (userMessage.includes('API_KEY') || userMessage.includes('401') || userMessage.includes('403')) {
-            userMessage = "Chiave API non valida o non configurata correttamente.";
+            userMessage = "Chiave API non valida. Verifica API_KEY su Vercel.";
         }
         showAlert(userMessage, 'error');
         setIsLoading(false);

@@ -6,24 +6,37 @@ import { EditIcon, FolderIcon } from './icons';
 
 interface HeaderProps {
   shopInfo: ShopInfo;
-  onSave: (name: string, description: string, vatRate: number) => void;
+  onSave: (newInfo: Omit<ShopInfo, 'name'>) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ shopInfo, onSave }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [name, setName] = useState(shopInfo.name);
+  const [companyName, setCompanyName] = useState(shopInfo.companyName);
   const [description, setDescription] = useState(shopInfo.description);
+  const [codiceFiscale, setCodiceFiscale] = useState(shopInfo.codiceFiscale);
+  const [iban, setIban] = useState(shopInfo.iban);
+  const [paymentConditions, setPaymentConditions] = useState(shopInfo.paymentConditions);
   const [vatRate, setVatRate] = useState(shopInfo.vatRate);
 
   const handleOpen = () => {
-    setName(shopInfo.name);
+    setCompanyName(shopInfo.companyName);
     setDescription(shopInfo.description);
+    setCodiceFiscale(shopInfo.codiceFiscale);
+    setIban(shopInfo.iban);
+    setPaymentConditions(shopInfo.paymentConditions);
     setVatRate(shopInfo.vatRate);
     setIsModalOpen(true);
   };
 
   const handleSave = () => {
-    onSave(name, description, vatRate);
+    onSave({
+      companyName,
+      description,
+      codiceFiscale,
+      iban,
+      paymentConditions,
+      vatRate,
+    });
     setIsModalOpen(false);
   };
 
@@ -49,22 +62,52 @@ const Header: React.FC<HeaderProps> = ({ shopInfo, onSave }) => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Modifica Intestazione">
         <div className="space-y-4">
           <div>
-            <label htmlFor="shopName" className="block text-sm font-medium text-gray-700">Nome Negozio</label>
+            <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">Nome Azienda (per documenti)</label>
             <input
               type="text"
-              id="shopName"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              id="companyName"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
               className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>
           <div>
-            <label htmlFor="shopDescription" className="block text-sm font-medium text-gray-700">Descrizione</label>
+            <label htmlFor="shopDescription" className="block text-sm font-medium text-gray-700">Indirizzo / Altre Info</label>
             <textarea
               id="shopDescription"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={3}
+              rows={2}
+              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="codiceFiscale" className="block text-sm font-medium text-gray-700">Codice Fiscale / P.IVA</label>
+            <input
+              type="text"
+              id="codiceFiscale"
+              value={codiceFiscale}
+              onChange={(e) => setCodiceFiscale(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="iban" className="block text-sm font-medium text-gray-700">IBAN</label>
+            <input
+              type="text"
+              id="iban"
+              value={iban}
+              onChange={(e) => setIban(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="paymentConditions" className="block text-sm font-medium text-gray-700">Condizioni di Pagamento</label>
+            <input
+              type="text"
+              id="paymentConditions"
+              value={paymentConditions}
+              onChange={(e) => setPaymentConditions(e.target.value)}
               className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>
