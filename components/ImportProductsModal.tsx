@@ -72,8 +72,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           return;
       }
 
-      if (!process.env.API_KEY) {
-          showAlert("Errore di sistema: Chiave API non configurata nel server Vercel.", "error");
+      if (!process.env.GEMINI_API_KEY) {
+          showAlert("Errore di sistema: Chiave GEMINI_API_KEY non configurata nel server Vercel.", "error");
           setIsLoading(false);
           return;
       }
@@ -82,7 +82,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
       showAlert('Categorizzazione automatica in corso...', 'info');
 
       try {
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
           const availableCategories = categories.filter(c => c.id !== api.UNCATEGORIZED_CAT_ID);
 
           if (availableCategories.length === 0) {
@@ -134,8 +134,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
       } catch (error: any) {
           console.error("Categorization error:", error);
           const errorMsg = error?.message || '';
-          if (errorMsg.includes('API_KEY') || errorMsg.includes('401') || errorMsg.includes('403')) {
-              showAlert('Errore API Key: Assicurati che la chiave API_KEY sia corretta su Vercel e fai il Redeploy.', 'error');
+          if (errorMsg.includes('GEMINI_API_KEY') || errorMsg.includes('401') || errorMsg.includes('403')) {
+              showAlert('Errore API Key: Assicurati che la chiave GEMINI_API_KEY sia corretta su Vercel e fai il Redeploy.', 'error');
           } else {
               showAlert('Categorizzazione fallita. Assegna le categorie manualmente.', 'warning');
           }
@@ -191,12 +191,12 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
                 }))
             };
         } else {
-            if (!process.env.API_KEY) {
-                showAlert("Chiave API mancante. Aggiungi API_KEY su Vercel e fai Redeploy.", "error");
+            if (!process.env.GEMINI_API_KEY) {
+                showAlert("Chiave API mancante. Aggiungi GEMINI_API_KEY su Vercel e fai Redeploy.", "error");
                 setIsLoading(false); return;
             }
             const { data: base64Data, mimeType } = await fileToBase64(file);
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
             const response = await ai.models.generateContent({
                 model: 'gemini-3-flash-preview',
                 contents: { parts: [ { inlineData: { mimeType, data: base64Data } }, { text: 'Estrai il nome del fornitore, la data del documento (in formato YYYY-MM-DD), e i dettagli dei prodotti. Per ogni prodotto, fornisci nome, quantità, prezzo di acquisto, e codice se disponibile. Restituisci un singolo oggetto JSON con chiavi "fornitore", "dataDocumento", e "prodotti" (un array di oggetti).' } ] },
@@ -228,8 +228,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
     } catch (error: any) {
         console.error("Import error:", error);
         let userMessage = error?.message || "Errore durante l'elaborazione del file.";
-        if (userMessage.includes('API_KEY') || userMessage.includes('401') || userMessage.includes('403')) {
-            userMessage = "Chiave API non valida o non configurata correttamente su Vercel (API_KEY).";
+        if (userMessage.includes('GEMINI_API_KEY') || userMessage.includes('401') || userMessage.includes('403')) {
+            userMessage = "Chiave API non valida o non configurata correttamente su Vercel (GEMINI_API_KEY).";
         }
         showAlert(userMessage, 'error');
         setIsLoading(false);
@@ -258,8 +258,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
 
   const handleCapture = async () => {
     if (!videoRef.current || !canvasRef.current) return;
-    if (!process.env.API_KEY) {
-        showAlert("Chiave API mancante. Configura API_KEY su Vercel.", "error"); return;
+    if (!process.env.GEMINI_API_KEY) {
+        showAlert("Chiave API mancante. Configura GEMINI_API_KEY su Vercel.", "error"); return;
     }
     setIsLoading(true);
     setLoadingMessage('Analisi immagine...');
@@ -274,7 +274,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
     stopCamera();
     
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: { parts: [ { inlineData: { mimeType: 'image/jpeg', data: base64Data } }, { text: 'Estrai il nome del fornitore, la data del documento (in formato YYYY-MM-DD), e i dettagli dei prodotti. Per ogni prodotto, fornisci nome, quantità, prezzo di acquisto, e codice se disponibile. Restituisci un singolo oggetto JSON con chiavi "fornitore", "dataDocumento", e "prodotti" (un array di oggetti).' } ] },
@@ -305,8 +305,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
     } catch (error: any) {
         console.error("Capture error:", error);
         let userMessage = error?.message || "Errore durante l'analisi dell'immagine.";
-        if (userMessage.includes('API_KEY') || userMessage.includes('401') || userMessage.includes('403')) {
-            userMessage = "Chiave API non valida. Verifica API_KEY su Vercel.";
+        if (userMessage.includes('GEMINI_API_KEY') || userMessage.includes('401') || userMessage.includes('403')) {
+            userMessage = "Chiave API non valida. Verifica GEMINI_API_KEY su Vercel.";
         }
         showAlert(userMessage, 'error');
         setIsLoading(false);
