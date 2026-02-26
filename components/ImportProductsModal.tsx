@@ -104,7 +104,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           const prompt = `Date le seguenti categorie: ${JSON.stringify(categoryNames)}. Per ciascuno dei seguenti prodotti, assegna la categoria più appropriata: ${JSON.stringify(productNames)}. Se nessuna è adatta, assegna 'Da Assegnare'. Rispondi con un array di oggetti JSON, con chiavi "prodotto" e "categoria".`;
           
           const response = await ai.models.generateContent({
-              model: 'gemini-3-flash-preview', contents: prompt,
+              model: 'gemini-3.1-pro-preview', contents: prompt,
               config: { 
                 responseMimeType: "application/json",
                 responseSchema: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { prodotto: { type: Type.STRING }, categoria: { type: Type.STRING } }, required: ['prodotto', 'categoria'] } }
@@ -113,7 +113,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           
           if (!response.text) throw new Error("La risposta AI per la categorizzazione era vuota.");
           
-          const categorizationResult = JSON.parse(response.text.trim()) as {prodotto: string, categoria: string}[];
+          const cleanJson = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+          const categorizationResult = JSON.parse(cleanJson) as {prodotto: string, categoria: string}[];
           const categorizationMap = new Map(categorizationResult.map(item => [item.prodotto, item.categoria]));
           const categoryNameToIdMap = new Map(categories.map(c => [c.name.toLowerCase(), c.id]));
 
@@ -185,7 +186,6 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
                 }))
             };
         } else {
-            // MODIFICATO: Uso di import.meta.env per Vite
             if (!import.meta.env.VITE_GEMINI_API_KEY) {
                 showAlert("Chiave API VITE_GEMINI_API_KEY mancante su Vercel.", "error");
                 setIsLoading(false); return;
@@ -193,8 +193,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
             const { data: base64Data, mimeType } = await fileToBase64(file);
             const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
             const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
-                contents: { parts: [ { inlineData: { mimeType, data: base64Data } }, { text: 'Estrai fornitore, data (YYYY-MM-DD), e prodotti (nome, quantità, prezzo acquisto, codice). Restituisci JSON.' } ] },
+                model: 'gemini-3.1-pro-preview',
+                contents: { parts: [ { inlineData: { mimeType, data: base64Data } }, { text: 'Estrai fornitore, data (YYYY-MM-DD), e prodotti (nome, quantità, prezzo acquisto, codice). Restituisci JSON puro.' } ] },
                 config: { responseMimeType: "application/json", responseSchema: {
                     type: Type.OBJECT, properties: {
                         fornitore: { type: Type.STRING }, dataDocumento: { type: Type.STRING },
@@ -203,7 +203,10 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
                 }}
             });
             if (!response.text) throw new Error("L'AI non ha restituito dati.");
-            extractedData = JSON.parse(response.text.trim()) as ExtractedDocumentData;
+            
+            // Pulizia JSON per evitare errori di parsing
+            const cleanJson = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+            extractedData = JSON.parse(cleanJson) as ExtractedDocumentData;
         }
 
         const productsWithPrice = extractedData.prodotti.map(p => ({...p, prezzoVendita: 0}));
@@ -220,7 +223,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         await runCategorizationAndFinalize(productsWithPrice, signature);
     } catch (error: any) {
         console.error("Import error:", error);
-        showAlert("Errore durante l'elaborazione del file.", 'error');
+        const errorMsg = error?.message || "Errore sconosciuto";
+        showAlert(`Errore durante l'elaborazione del file: ${errorMsg}`, 'error');
         setIsLoading(false);
         onClose();
     }
@@ -267,8 +271,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         // MODIFICATO: Uso di import.meta.env per Vite
         const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: { parts: [ { inlineData: { mimeType: 'image/jpeg', data: base64Data } }, { text: 'Estrai fornitore, data (YYYY-MM-DD), e prodotti (nome, quantità, prezzo acquisto, codice). Restituisci JSON.' } ] },
+            model: 'gemini-3.1-pro-preview',
+            contents: { parts: [ { inlineData: { mimeType: 'image/jpeg', data: base64Data } }, { text: 'Estrai fornitore, data (YYYY-MM-DD), e prodotti (nome, quantità, prezzo acquisto, codice). Restituisci JSON puro.' } ] },
             config: { responseMimeType: "application/json", responseSchema: {
                     type: Type.OBJECT, properties: {
                         fornitore: { type: Type.STRING }, dataDocumento: { type: Type.STRING },
@@ -278,7 +282,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         });
         
         if (!response.text) throw new Error("L'AI non ha restituito dati.");
-        const extractedData = JSON.parse(response.text.trim()) as ExtractedDocumentData;
+        const cleanJson = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const extractedData = JSON.parse(cleanJson) as ExtractedDocumentData;
         const productsWithPrice = extractedData.prodotti.map(p => ({...p, prezzoVendita: 0}));
         const signature = api.createDocumentSignature(extractedData.fornitore, extractedData.dataDocumento, productsWithPrice);
         
@@ -293,7 +298,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         await runCategorizationAndFinalize(productsWithPrice, signature);
     } catch (error: any) {
         console.error("Capture error:", error);
-        showAlert("Errore durante l'analisi dell'immagine.", 'error');
+        const errorMsg = error?.message || "Errore sconosciuto";
+        showAlert(`Errore durante l'analisi dell'immagine: ${errorMsg}`, 'error');
         setIsLoading(false);
         onClose();
     }

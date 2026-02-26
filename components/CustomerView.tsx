@@ -229,14 +229,15 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
             const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
             const prompt = `Trova la Partita IVA e il Codice Fiscale per l'azienda italiana "${newCustomer.ragioneSociale}". Se non trovi uno dei due valori, lascialo come stringa vuota.`;
             
-            const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt,
+            const response = await ai.models.generateContent({ model: 'gemini-3.1-pro-preview', contents: prompt,
                 config: { tools: [{ googleSearch: {} }], responseMimeType: "application/json",
                     responseSchema: { type: Type.OBJECT, properties: { piva: { type: Type.STRING }, codiceFiscale: { type: Type.STRING } }, required: ['piva', 'codiceFiscale'] }
                 }
             });
 
             if (response.text) {
-                const data = JSON.parse(response.text.trim());
+                const cleanJson = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+                const data = JSON.parse(cleanJson);
                 setNewCustomer(prev => ({...prev, piva: data.piva || prev.piva, codiceFiscale: data.codiceFiscale || prev.codiceFiscale}));
                 showAlert('Dati trovati e compilati!', 'success');
             } else {
