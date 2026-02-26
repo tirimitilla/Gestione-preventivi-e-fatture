@@ -70,9 +70,9 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           return;
       }
 
-      // MODIFICATO: Uso di import.meta.env per Vite
-      if (!import.meta.env.VITE_GEMINI_API_KEY) {
-          showAlert("Errore di sistema: Chiave VITE_GEMINI_API_KEY non configurata su Vercel.", "error");
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+          showAlert("Errore di sistema: Chiave API non configurata su Vercel. Fai Redeploy.", "error");
           setIsLoading(false);
           return;
       }
@@ -81,8 +81,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
       showAlert('Categorizzazione automatica in corso...', 'info');
 
       try {
-          // MODIFICATO: Uso di import.meta.env per Vite
-          const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+          const ai = new GoogleGenAI({ apiKey });
           const availableCategories = categories.filter(c => c.id !== api.UNCATEGORIZED_CAT_ID);
 
           if (availableCategories.length === 0) {
@@ -104,7 +103,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           const prompt = `Date le seguenti categorie: ${JSON.stringify(categoryNames)}. Per ciascuno dei seguenti prodotti, assegna la categoria più appropriata: ${JSON.stringify(productNames)}. Se nessuna è adatta, assegna 'Da Assegnare'. Rispondi con un array di oggetti JSON, con chiavi "prodotto" e "categoria".`;
           
           const response = await ai.models.generateContent({
-              model: 'gemini-3.1-pro-preview', contents: prompt,
+              model: 'gemini-1.5-flash-latest', contents: prompt,
               config: { 
                 responseMimeType: "application/json",
                 responseSchema: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { prodotto: { type: Type.STRING }, categoria: { type: Type.STRING } }, required: ['prodotto', 'categoria'] } }
@@ -186,14 +185,15 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
                 }))
             };
         } else {
-            if (!import.meta.env.VITE_GEMINI_API_KEY) {
-                showAlert("Chiave API VITE_GEMINI_API_KEY mancante su Vercel.", "error");
+            const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+            if (!apiKey) {
+                showAlert("Chiave API non trovata. Verifica VITE_GEMINI_API_KEY su Vercel e fai Redeploy.", "error");
                 setIsLoading(false); return;
             }
             const { data: base64Data, mimeType } = await fileToBase64(file);
-            const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+            const ai = new GoogleGenAI({ apiKey });
             const response = await ai.models.generateContent({
-                model: 'gemini-3.1-pro-preview',
+                model: 'gemini-1.5-flash-latest',
                 contents: { parts: [ { inlineData: { mimeType, data: base64Data } }, { text: 'Estrai fornitore, data (YYYY-MM-DD), e prodotti (nome, quantità, prezzo acquisto, codice). Restituisci JSON puro.' } ] },
                 config: { responseMimeType: "application/json", responseSchema: {
                     type: Type.OBJECT, properties: {
@@ -202,9 +202,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
                     }, required: ['fornitore', 'dataDocumento', 'prodotti']
                 }}
             });
-            if (!response.text) throw new Error("L'AI non ha restituito dati.");
+            if (!response.text) throw new Error("L'intelligenza artificiale non ha restituito dati dal documento.");
             
-            // Pulizia JSON per evitare errori di parsing
             const cleanJson = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
             extractedData = JSON.parse(cleanJson) as ExtractedDocumentData;
         }
@@ -268,10 +267,15 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
     stopCamera();
 
     try {
-        // MODIFICATO: Uso di import.meta.env per Vite
-        const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+        
+        if (!apiKey) {
+            throw new Error("Chiave API non trovata. Verifica di aver impostato VITE_GEMINI_API_KEY su Vercel e di aver fatto il Redeploy.");
+        }
+
+        const ai = new GoogleGenAI({ apiKey });
         const response = await ai.models.generateContent({
-            model: 'gemini-3.1-pro-preview',
+            model: 'gemini-1.5-flash-latest', // Usiamo un modello più stabile per compatibilità
             contents: { parts: [ { inlineData: { mimeType: 'image/jpeg', data: base64Data } }, { text: 'Estrai fornitore, data (YYYY-MM-DD), e prodotti (nome, quantità, prezzo acquisto, codice). Restituisci JSON puro.' } ] },
             config: { responseMimeType: "application/json", responseSchema: {
                     type: Type.OBJECT, properties: {
@@ -281,15 +285,16 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
             }}
         });
         
-        if (!response.text) throw new Error("L'AI non ha restituito dati.");
+        if (!response.text) throw new Error("L'intelligenza artificiale non ha restituito dati dal documento.");
         const cleanJson = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
         const extractedData = JSON.parse(cleanJson) as ExtractedDocumentData;
         const productsWithPrice = extractedData.prodotti.map(p => ({...p, prezzoVendita: 0}));
+        
         const signature = api.createDocumentSignature(extractedData.fornitore, extractedData.dataDocumento, productsWithPrice);
         
         const isDuplicate = await api.checkDocumentExists(signature);
         if (isDuplicate) {
-            showAlert('Documento già caricato.', 'warning');
+            showAlert('Documento già caricato precedentemente.', 'warning');
             setIsLoading(false);
             onClose();
             return;
@@ -298,8 +303,14 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         await runCategorizationAndFinalize(productsWithPrice, signature);
     } catch (error: any) {
         console.error("Capture error:", error);
-        const errorMsg = error?.message || "Errore sconosciuto";
-        showAlert(`Errore durante l'analisi dell'immagine: ${errorMsg}`, 'error');
+        let errorMsg = error?.message || "Errore sconosciuto";
+        
+        // Messaggio più amichevole per errori comuni
+        if (errorMsg.includes("API_KEY_INVALID") || errorMsg.includes("403") || errorMsg.includes("401")) {
+            errorMsg = "La chiave API non è valida o non ha i permessi necessari. Controlla la console di Google AI Studio.";
+        }
+        
+        showAlert(`Errore analisi: ${errorMsg}`, 'error');
         setIsLoading(false);
         onClose();
     }
