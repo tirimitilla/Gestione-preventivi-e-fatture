@@ -226,7 +226,7 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
         showAlert('Ricerca dati in corso...', 'info');
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
             const prompt = `Trova la Partita IVA e il Codice Fiscale per l'azienda italiana "${newCustomer.ragioneSociale}". Se non trovi uno dei due valori, lascialo come stringa vuota.`;
             
             const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt,

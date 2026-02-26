@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -18,7 +17,6 @@ type ExtractedDocumentData = {
     dataDocumento: string; // YYYY-MM-DD
     prodotti: (Omit<UncategorizedProduct, 'prezzoVendita'>)[];
 };
-
 
 interface ImportProductsModalProps {
   isOpen: boolean;
@@ -72,8 +70,9 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           return;
       }
 
-      if (!process.env.GEMINI_API_KEY) {
-          showAlert("Errore di sistema: Chiave GEMINI_API_KEY non configurata nel server Vercel.", "error");
+      // MODIFICATO: Uso di import.meta.env per Vite
+      if (!import.meta.env.VITE_GEMINI_API_KEY) {
+          showAlert("Errore di sistema: Chiave VITE_GEMINI_API_KEY non configurata su Vercel.", "error");
           setIsLoading(false);
           return;
       }
@@ -82,7 +81,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
       showAlert('Categorizzazione automatica in corso...', 'info');
 
       try {
-          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+          // MODIFICATO: Uso di import.meta.env per Vite
+          const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
           const availableCategories = categories.filter(c => c.id !== api.UNCATEGORIZED_CAT_ID);
 
           if (availableCategories.length === 0) {
@@ -133,12 +133,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           onImportSuccess(productsWithCategories, signature);
       } catch (error: any) {
           console.error("Categorization error:", error);
-          const errorMsg = error?.message || '';
-          if (errorMsg.includes('GEMINI_API_KEY') || errorMsg.includes('401') || errorMsg.includes('403')) {
-              showAlert('Errore API Key: Assicurati che la chiave GEMINI_API_KEY sia corretta su Vercel e fai il Redeploy.', 'error');
-          } else {
-              showAlert('Categorizzazione fallita. Assegna le categorie manualmente.', 'warning');
-          }
+          showAlert('Categorizzazione fallita. Assegna le categorie manualmente.', 'warning');
           const productsWithDefaults: StagedProduct[] = products.map(p => ({
               prodotto: p.prodotto,
               quantita: p.quantita,
@@ -154,7 +149,6 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           onClose();
       }
   };
-
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -176,7 +170,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
             const lines = xmlDoc.querySelectorAll("DettaglioLinee");
 
             if (!supplierNode || !dateNode || lines.length === 0) {
-                 showAlert("XML non valido o mancante di dati essenziali (fornitore, data, prodotti).", 'error');
+                 showAlert("XML non valido o mancante di dati essenziali.", 'error');
                  setIsLoading(false); return;
             }
 
@@ -191,15 +185,16 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
                 }))
             };
         } else {
-            if (!process.env.GEMINI_API_KEY) {
-                showAlert("Chiave API mancante. Aggiungi GEMINI_API_KEY su Vercel e fai Redeploy.", "error");
+            // MODIFICATO: Uso di import.meta.env per Vite
+            if (!import.meta.env.VITE_GEMINI_API_KEY) {
+                showAlert("Chiave API VITE_GEMINI_API_KEY mancante su Vercel.", "error");
                 setIsLoading(false); return;
             }
             const { data: base64Data, mimeType } = await fileToBase64(file);
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
             const response = await ai.models.generateContent({
                 model: 'gemini-3-flash-preview',
-                contents: { parts: [ { inlineData: { mimeType, data: base64Data } }, { text: 'Estrai il nome del fornitore, la data del documento (in formato YYYY-MM-DD), e i dettagli dei prodotti. Per ogni prodotto, fornisci nome, quantità, prezzo di acquisto, e codice se disponibile. Restituisci un singolo oggetto JSON con chiavi "fornitore", "dataDocumento", e "prodotti" (un array di oggetti).' } ] },
+                contents: { parts: [ { inlineData: { mimeType, data: base64Data } }, { text: 'Estrai fornitore, data (YYYY-MM-DD), e prodotti (nome, quantità, prezzo acquisto, codice). Restituisci JSON.' } ] },
                 config: { responseMimeType: "application/json", responseSchema: {
                     type: Type.OBJECT, properties: {
                         fornitore: { type: Type.STRING }, dataDocumento: { type: Type.STRING },
@@ -210,15 +205,13 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
             if (!response.text) throw new Error("L'AI non ha restituito dati.");
             extractedData = JSON.parse(response.text.trim()) as ExtractedDocumentData;
         }
-        
+
         const productsWithPrice = extractedData.prodotti.map(p => ({...p, prezzoVendita: 0}));
         const signature = api.createDocumentSignature(extractedData.fornitore, extractedData.dataDocumento, productsWithPrice);
         
-        setLoadingMessage('Verifica duplicati...');
         const isDuplicate = await api.checkDocumentExists(signature);
-
         if (isDuplicate) {
-            showAlert('Attenzione: questo documento sembra essere già stato caricato.', 'warning');
+            showAlert('Documento già caricato.', 'warning');
             setIsLoading(false);
             onClose();
             return;
@@ -227,28 +220,24 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         await runCategorizationAndFinalize(productsWithPrice, signature);
     } catch (error: any) {
         console.error("Import error:", error);
-        let userMessage = error?.message || "Errore durante l'elaborazione del file.";
-        if (userMessage.includes('GEMINI_API_KEY') || userMessage.includes('401') || userMessage.includes('403')) {
-            userMessage = "Chiave API non valida o non configurata correttamente su Vercel (GEMINI_API_KEY).";
-        }
-        showAlert(userMessage, 'error');
+        showAlert("Errore durante l'elaborazione del file.", 'error');
         setIsLoading(false);
         onClose();
     }
   };
-  
+
   const startCamera = async () => {
         setView('scanning');
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             if (videoRef.current) videoRef.current.srcObject = stream;
         } catch (err) {
-            showAlert('Errore fotocamera: impossibile accedere al dispositivo.', 'error');
+            showAlert('Errore fotocamera.', 'error');
             onClose();
         }
     };
 
-    const stopCamera = () => {
+  const stopCamera = () => {
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
             stream.getTracks().forEach(track => track.stop());
@@ -258,8 +247,9 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
 
   const handleCapture = async () => {
     if (!videoRef.current || !canvasRef.current) return;
-    if (!process.env.GEMINI_API_KEY) {
-        showAlert("Chiave API mancante. Configura GEMINI_API_KEY su Vercel.", "error"); return;
+    // MODIFICATO: Uso di import.meta.env per Vite
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
+        showAlert("Chiave API mancante su Vercel.", "error"); return;
     }
     setIsLoading(true);
     setLoadingMessage('Analisi immagine...');
@@ -272,12 +262,13 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
     const base64Data = canvas.toDataURL('image/jpeg').split(',')[1];
     
     stopCamera();
-    
+
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        // MODIFICATO: Uso di import.meta.env per Vite
+        const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: { parts: [ { inlineData: { mimeType: 'image/jpeg', data: base64Data } }, { text: 'Estrai il nome del fornitore, la data del documento (in formato YYYY-MM-DD), e i dettagli dei prodotti. Per ogni prodotto, fornisci nome, quantità, prezzo di acquisto, e codice se disponibile. Restituisci un singolo oggetto JSON con chiavi "fornitore", "dataDocumento", e "prodotti" (un array di oggetti).' } ] },
+            contents: { parts: [ { inlineData: { mimeType: 'image/jpeg', data: base64Data } }, { text: 'Estrai fornitore, data (YYYY-MM-DD), e prodotti (nome, quantità, prezzo acquisto, codice). Restituisci JSON.' } ] },
             config: { responseMimeType: "application/json", responseSchema: {
                     type: Type.OBJECT, properties: {
                         fornitore: { type: Type.STRING }, dataDocumento: { type: Type.STRING },
@@ -291,11 +282,9 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         const productsWithPrice = extractedData.prodotti.map(p => ({...p, prezzoVendita: 0}));
         const signature = api.createDocumentSignature(extractedData.fornitore, extractedData.dataDocumento, productsWithPrice);
         
-        setLoadingMessage('Verifica duplicati...');
         const isDuplicate = await api.checkDocumentExists(signature);
-
         if (isDuplicate) {
-            showAlert('Attenzione: questo documento sembra essere già stato caricato.', 'warning');
+            showAlert('Documento già caricato.', 'warning');
             setIsLoading(false);
             onClose();
             return;
@@ -304,16 +293,12 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         await runCategorizationAndFinalize(productsWithPrice, signature);
     } catch (error: any) {
         console.error("Capture error:", error);
-        let userMessage = error?.message || "Errore durante l'analisi dell'immagine.";
-        if (userMessage.includes('GEMINI_API_KEY') || userMessage.includes('401') || userMessage.includes('403')) {
-            userMessage = "Chiave API non valida. Verifica GEMINI_API_KEY su Vercel.";
-        }
-        showAlert(userMessage, 'error');
+        showAlert("Errore durante l'analisi dell'immagine.", 'error');
         setIsLoading(false);
         onClose();
     }
   };
-  
+
   const renderContent = () => {
     if (isLoading) return <Spinner text={loadingMessage || 'Caricamento...'} />;
     if (!view) return <Spinner />;
@@ -324,14 +309,8 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
         default: return <Spinner />;
     }
   };
-  
-  const getModalTitle = () => {
-      if (importType === 'camera') return "Scansiona Documento";
-      if (importType === 'file') return "Importa da File";
-      return "Importa Prodotti";
-  };
-  
-  return (<Modal isOpen={isOpen} onClose={onClose} title={getModalTitle()} size="lg">{renderContent()}</Modal>);
+
+  return (<Modal isOpen={isOpen} onClose={onClose} title={importType === 'camera' ? "Scansiona" : "Importa"} size="lg">{renderContent()}</Modal>);
 };
 
 export default ImportProductsModal;
