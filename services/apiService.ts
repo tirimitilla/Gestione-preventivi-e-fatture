@@ -1,241 +1,411 @@
 
 import { ShopInfo, Category, Product, Customer, ConstructionSite, Purchase, PurchaseItem, Quote, QuoteItem, SiteMaterial } from '../types';
+import { supabase } from './supabase';
 
-export const UNCATEGORIZED_CAT_ID = 'cat-uncategorized';
+export const UNCATEGORIZED_CAT_ID = 'da-assegnare-id'; // Will be updated dynamically if needed, or we use the name
 
-// --- MOCK DATABASE ---
-let mockShopInfo: ShopInfo = {
-  name: 'Gestione Preventivi',
-  companyName: 'ELETTRO-CALORE IMPIANTI',
-  description: 'VIA ELETTRICA 123, ROMA',
-  codiceFiscale: '00168238333 (IT)',
-  iban: 'IT 01 A 12345 67890 123456789012',
-  paymentConditions: 'Bonifico Bancario a 30 giorni.',
-  vatRate: 22
-};
+// --- HELPERS ---
+const mapProduct = (p: any): Product => ({
+  id: p.id,
+  categoryId: p.category_id,
+  codiceProdotto: p.codice_prodotto,
+  prodotto: p.prodotto,
+  quantita: Number(p.quantita),
+  prezzoAcquisto: Number(p.prezzo_acquisto),
+  prezzoVendita: Number(p.prezzo_vendita),
+});
 
-let mockCategories: Category[] = [
-  { id: 'cat-1', name: 'Abbigliamento', profitMargin: 50, vatRate: 22 },
-  { id: 'cat-2', name: 'Elettronica', profitMargin: 30, vatRate: 22 },
-  { id: 'cat-3', name: 'Materiale Elettrico', profitMargin: 60, vatRate: 10 },
-  { id: UNCATEGORIZED_CAT_ID, name: 'Da Assegnare', profitMargin: 0, vatRate: 22 },
-];
+const mapCustomer = (c: any): Customer => ({
+  id: c.id,
+  ragioneSociale: c.ragione_sociale,
+  piva: c.piva || '',
+  codiceFiscale: c.codice_fiscale || '',
+  indirizzo: c.indirizzo || '',
+  citta: c.citta || '',
+  cap: c.cap || '',
+  provincia: c.provincia || '',
+  email: c.email || '',
+  telefono: c.telefono || '',
+});
 
-let mockProducts: Product[] = [
-  { id: 'prod-1', categoryId: 'cat-1', codiceProdotto: 'TSH-001', prodotto: 'Maglietta Nera', quantita: 50, prezzoAcquisto: 8.50, prezzoVendita: 12.75 },
-  { id: 'prod-2', categoryId: 'cat-1', codiceProdotto: 'JNS-004', prodotto: 'Jeans Slim Fit', quantita: 30, prezzoAcquisto: 25.00, prezzoVendita: 37.50 },
-  { id: 'prod-3', categoryId: 'cat-2', codiceProdotto: 'HDP-002', prodotto: 'Cuffie Bluetooth', quantita: 20, prezzoAcquisto: 45.00, prezzoVendita: 58.50 },
-  { id: 'prod-4', categoryId: 'cat-2', codiceProdotto: 'MSE-007', prodotto: 'Mouse Wireless', quantita: 100, prezzoAcquisto: 12.00, prezzoVendita: 15.60 },
-  { id: 'prod-5', categoryId: 'cat-3', codiceProdotto: 'CAV-01', prodotto: 'Cavo HDMI 2m', quantita: 80, prezzoAcquisto: 5.50, prezzoVendita: 8.80 },
-];
+const mapSite = (s: any): ConstructionSite => ({
+  id: s.id,
+  customerId: s.customer_id,
+  nome: s.nome,
+  indirizzo: s.indirizzo || '',
+  materialeDaAcquistare: s.materiale_da_acquistare || [],
+});
 
-let mockCustomers: Customer[] = [
-  { id: 'cust-1', ragioneSociale: 'Mario Rossi SRL', piva: '12345678901', codiceFiscale: 'RSSMRA80A01H501Y', indirizzo: 'Via Roma 1', citta: 'Milano', cap: '20121', provincia: 'MI', email: 'mario@rossi.it', telefono: '021234567' },
-  { id: 'cust-2', ragioneSociale: 'Bianchi Costruzioni', piva: '09876543210', codiceFiscale: 'BNCFRC75B02F205Z', indirizzo: 'Corso Vittorio Emanuele 10', citta: 'Torino', cap: '10121', provincia: 'TO', email: 'info@bianchi.com', telefono: '011987654' },
-];
-
-let mockConstructionSites: ConstructionSite[] = [
-  { id: 'site-1', customerId: 'cust-1', nome: 'Ristrutturazione Appartamento', indirizzo: 'Via Garibaldi 5, Milano', materialeDaAcquistare: [
-      { productId: 'prod-5', quantity: 10, purchased: true, dueDate: '2024-07-10' },
-      { productId: 'prod-3', quantity: 5, purchased: false, dueDate: '2024-08-01' },
-  ]},
-  { id: 'site-2', customerId: 'cust-1', nome: 'Ufficio Direzionale', indirizzo: 'Piazza Duomo 1, Milano', materialeDaAcquistare: [
-      { productId: 'prod-4', quantity: 20, purchased: false, dueDate: '2024-06-20' }, // Overdue example
-  ]},
-  { id: 'site-3', customerId: 'cust-2', nome: 'Nuova Villetta', indirizzo: 'Strada del Pino 15, Pecetto Torinese', materialeDaAcquistare: [
-      { productId: 'prod-1', quantity: 2, purchased: true },
-      { productId: 'prod-2', quantity: 2, purchased: false, dueDate: '2024-09-15' },
-  ]},
-];
-
-let mockPurchases: Purchase[] = [
-    { id: 'purch-1', customerId: 'cust-1', siteId: 'site-1', date: '2023-10-15', items: [
-        { product: mockProducts.find(p => p.id === 'prod-5')!, quantity: 20 },
-    ], total: 110.00 },
-    { id: 'purch-2', customerId: 'cust-1', siteId: 'site-1', date: '2023-10-18', items: [
-        { product: mockProducts.find(p => p.id === 'prod-1')!, quantity: 5 },
-    ], total: 42.50 },
-];
-
-let mockQuotes: Quote[] = [];
-let quoteCounter = 0;
-let mockDocumentHistory: string[] = [];
-// ---------------------
-
-const simulateDelay = (ms: number) => new Promise(res => setTimeout(res, ms));
+// --- API FUNCTIONS ---
 
 export const getHeaderInfo = async (): Promise<ShopInfo> => {
-  await simulateDelay(300);
-  return { ...mockShopInfo };
+  const { data, error } = await supabase
+    .from('shop_info')
+    .select('*')
+    .eq('id', 1)
+    .single();
+  
+  if (error) throw error;
+  return {
+    name: data.name,
+    companyName: data.company_name,
+    description: data.description,
+    codiceFiscale: data.codice_fiscale,
+    iban: data.iban,
+    paymentConditions: data.payment_conditions,
+    vatRate: Number(data.vat_rate),
+  };
 };
 
 export const saveHeaderInfo = async (newInfo: Omit<ShopInfo, 'name'>): Promise<string> => {
-  await simulateDelay(500);
-  mockShopInfo = { ...mockShopInfo, ...newInfo };
+  const { error } = await supabase
+    .from('shop_info')
+    .update({
+      company_name: newInfo.companyName,
+      description: newInfo.description,
+      codice_fiscale: newInfo.codiceFiscale,
+      iban: newInfo.iban,
+      payment_conditions: newInfo.paymentConditions,
+      vat_rate: newInfo.vatRate,
+    })
+    .eq('id', 1);
+  
+  if (error) throw error;
   return "Intestazione salvata con successo";
 };
 
 export const getCategories = async (): Promise<Category[]> => {
-  await simulateDelay(400);
-  return [...mockCategories];
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .order('name');
+  
+  if (error) throw error;
+  return data.map(c => ({
+    id: c.id,
+    name: c.name,
+    profitMargin: Number(c.profit_margin),
+    vatRate: Number(c.vat_rate),
+  }));
 };
 
 export const createCategory = async (categoryName: string, profitMargin: number, vatRate: number): Promise<Category> => {
-  await simulateDelay(600);
-  if (mockCategories.some(c => c.name.toLowerCase() === categoryName.toLowerCase())) {
-    throw new Error('Categoria già esistente');
+  const { data, error } = await supabase
+    .from('categories')
+    .insert([{ name: categoryName, profit_margin: profitMargin, vat_rate: vatRate }])
+    .select()
+    .single();
+  
+  if (error) {
+    if (error.code === '23505') throw new Error('Categoria già esistente');
+    throw error;
   }
-  const newCategory: Category = { id: `cat-${Date.now()}`, name: categoryName, profitMargin, vatRate };
-  mockCategories.push(newCategory);
-  return newCategory;
+  return {
+    id: data.id,
+    name: data.name,
+    profitMargin: Number(data.profit_margin),
+    vatRate: Number(data.vat_rate),
+  };
 };
 
 export const getProducts = async (categoryId: string): Promise<Product[]> => {
-  await simulateDelay(700);
-  return mockProducts.filter(p => p.categoryId === categoryId);
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('category_id', categoryId);
+  
+  if (error) throw error;
+  return data.map(mapProduct);
 };
 
 export const getAllProducts = async (): Promise<Product[]> => {
-  await simulateDelay(500);
-  return [...mockProducts];
-}
+  const { data, error } = await supabase
+    .from('products')
+    .select('*');
+  
+  if (error) throw error;
+  return data.map(mapProduct);
+};
 
 export const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
-  await simulateDelay(500);
-  
-  const existingProductIndex = mockProducts.findIndex(p => p.codiceProdotto.toLowerCase() === productData.codiceProdotto.toLowerCase());
+  // Check if product exists by code
+  const { data: existing } = await supabase
+    .from('products')
+    .select('*')
+    .eq('codice_prodotto', productData.codiceProdotto)
+    .single();
 
-  if (existingProductIndex !== -1) {
-    // Product exists, UPDATE it (UPSERT logic)
-    const existingProduct = mockProducts[existingProductIndex];
+  if (existing) {
+    // Update existing
+    const { data: updated, error } = await supabase
+      .from('products')
+      .update({
+        prodotto: productData.prodotto,
+        prezzo_acquisto: productData.prezzoAcquisto,
+        prezzo_vendita: productData.prezzoVendita,
+        quantita: Number(existing.quantita) + productData.quantita,
+        category_id: (productData.categoryId && productData.categoryId !== UNCATEGORIZED_CAT_ID) ? productData.categoryId : existing.category_id
+      })
+      .eq('id', existing.id)
+      .select()
+      .single();
     
-    const updatedProduct: Product = {
-      ...existingProduct,
-      prodotto: productData.prodotto,
-      prezzoAcquisto: productData.prezzoAcquisto,
-      prezzoVendita: productData.prezzoVendita,
-      quantita: existingProduct.quantita + productData.quantita,
-    };
-
-    if (productData.categoryId && productData.categoryId !== UNCATEGORIZED_CAT_ID) {
-      updatedProduct.categoryId = productData.categoryId;
-    }
-    
-    mockProducts[existingProductIndex] = updatedProduct;
-    return updatedProduct;
-
+    if (error) throw error;
+    return mapProduct(updated);
   } else {
-    // Product does NOT exist, CREATE it
-    const finalProductData = { ...productData };
-    if (!finalProductData.categoryId) {
-        finalProductData.categoryId = UNCATEGORIZED_CAT_ID;
+    // Insert new
+    let catId = productData.categoryId;
+    if (!catId || catId === UNCATEGORIZED_CAT_ID) {
+      const { data: uncategorized } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('name', 'Da Assegnare')
+        .single();
+      catId = uncategorized?.id;
     }
 
-    const newProduct: Product = {
-      id: `prod-${Date.now()}`,
-      ...finalProductData,
-    };
-    mockProducts.push(newProduct);
-    return newProduct;
+    const { data: inserted, error } = await supabase
+      .from('products')
+      .insert([{
+        category_id: catId,
+        codice_prodotto: productData.codiceProdotto,
+        prodotto: productData.prodotto,
+        quantita: productData.quantita,
+        prezzo_acquisto: productData.prezzoAcquisto,
+        prezzo_vendita: productData.prezzoVendita,
+      }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return mapProduct(inserted);
   }
 };
 
 export const updateProduct = async (productId: string, productData: Omit<Product, 'id'>): Promise<Product> => {
-  await simulateDelay(800);
-  const productIndex = mockProducts.findIndex(p => p.id === productId);
-  if (productIndex === -1) {
-    throw new Error('Prodotto non trovato');
-  }
-  const updatedProduct = { id: productId, ...productData };
-  mockProducts[productIndex] = updatedProduct;
-  return updatedProduct;
+  const { data, error } = await supabase
+    .from('products')
+    .update({
+      category_id: productData.categoryId,
+      codice_prodotto: productData.codiceProdotto,
+      prodotto: productData.prodotto,
+      quantita: productData.quantita,
+      prezzo_acquisto: productData.prezzoAcquisto,
+      prezzo_vendita: productData.prezzoVendita,
+    })
+    .eq('id', productId)
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return mapProduct(data);
 };
 
 export const deleteProduct = async (productId: string): Promise<string> => {
-  await simulateDelay(500);
-  const initialLength = mockProducts.length;
-  mockProducts = mockProducts.filter(p => p.id !== productId);
-  if (mockProducts.length === initialLength) {
-    throw new Error('Prodotto non trovato');
-  }
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .eq('id', productId);
+  
+  if (error) throw error;
   return "Prodotto eliminato con successo";
 };
 
 // --- Customer Functions ---
 export const getCustomers = async (): Promise<Customer[]> => {
-  await simulateDelay(500);
-  return [...mockCustomers];
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .order('ragione_sociale');
+  
+  if (error) throw error;
+  return data.map(mapCustomer);
 };
 
 export const addCustomer = async (customerData: Omit<Customer, 'id'>): Promise<Customer> => {
-    await simulateDelay(600);
-    if (mockCustomers.some(c => c.piva === customerData.piva || c.codiceFiscale === customerData.codiceFiscale)) {
-        throw new Error('Cliente con questa P.IVA o Codice Fiscale già esistente.');
-    }
-    const newCustomer: Customer = { id: `cust-${Date.now()}`, ...customerData };
-    mockCustomers.push(newCustomer);
-    return newCustomer;
-}
+  const { data, error } = await supabase
+    .from('customers')
+    .insert([{
+      ragione_sociale: customerData.ragioneSociale,
+      piva: customerData.piva,
+      codice_fiscale: customerData.codiceFiscale,
+      indirizzo: customerData.indirizzo,
+      citta: customerData.citta,
+      cap: customerData.cap,
+      provincia: customerData.provincia,
+      email: customerData.email,
+      telefono: customerData.telefono,
+    }])
+    .select()
+    .single();
+  
+  if (error) {
+    if (error.code === '23505') throw new Error('Cliente con questa P.IVA o Codice Fiscale già esistente.');
+    throw error;
+  }
+  return mapCustomer(data);
+};
 
 // --- Construction Site Functions ---
 export const getConstructionSites = async (customerId: string): Promise<ConstructionSite[]> => {
-    await simulateDelay(400);
-    return mockConstructionSites.filter(site => site.customerId === customerId);
+  const { data, error } = await supabase
+    .from('construction_sites')
+    .select('*')
+    .eq('customer_id', customerId);
+  
+  if (error) throw error;
+  return data.map(mapSite);
 };
 
 export const addConstructionSite = async (siteData: Omit<ConstructionSite, 'id'>): Promise<ConstructionSite> => {
-    await simulateDelay(500);
-    const newSite: ConstructionSite = { id: `site-${Date.now()}`, ...siteData };
-    mockConstructionSites.push(newSite);
-    return newSite;
-}
+  const { data, error } = await supabase
+    .from('construction_sites')
+    .insert([{
+      customer_id: siteData.customerId,
+      nome: siteData.nome,
+      indirizzo: siteData.indirizzo,
+      materiale_da_acquistare: siteData.materialeDaAcquistare,
+    }])
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return mapSite(data);
+};
 
 export const updateSiteMaterials = async (siteId: string, materials: SiteMaterial[]): Promise<ConstructionSite> => {
-    await simulateDelay(400);
-    const siteIndex = mockConstructionSites.findIndex(s => s.id === siteId);
-    if (siteIndex === -1) {
-      throw new Error('Cantiere non trovato');
-    }
-    mockConstructionSites[siteIndex].materialeDaAcquistare = materials;
-    return { ...mockConstructionSites[siteIndex] };
+  const { data, error } = await supabase
+    .from('construction_sites')
+    .update({ materiale_da_acquistare: materials })
+    .eq('id', siteId)
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return mapSite(data);
 };
 
 // --- Purchase Functions ---
 export const getPurchasesForSite = async (siteId: string): Promise<Purchase[]> => {
-    await simulateDelay(600);
-    return mockPurchases.filter(p => p.siteId === siteId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const { data, error } = await supabase
+    .from('purchases')
+    .select('*')
+    .eq('site_id', siteId)
+    .order('date', { ascending: false });
+  
+  if (error) throw error;
+  return data.map(p => ({
+    id: p.id,
+    customerId: p.customer_id,
+    siteId: p.site_id,
+    date: p.date,
+    items: p.items,
+    total: Number(p.total),
+  }));
 };
 
 export const addPurchase = async (purchaseData: Omit<Purchase, 'id'>): Promise<Purchase> => {
-    await simulateDelay(700);
-    const newPurchase: Purchase = {
-        id: `purch-${Date.now()}`,
-        ...purchaseData,
-    };
-    mockPurchases.push(newPurchase);
-    return newPurchase;
+  const { data, error } = await supabase
+    .from('purchases')
+    .insert([{
+      customer_id: purchaseData.customerId,
+      site_id: purchaseData.siteId,
+      date: purchaseData.date,
+      items: purchaseData.items,
+      total: purchaseData.total,
+    }])
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return {
+    id: data.id,
+    customerId: data.customer_id,
+    siteId: data.site_id,
+    date: data.date,
+    items: data.items,
+    total: Number(data.total),
+  };
 };
 
 // --- Quote Functions ---
 export const getQuotesForSite = async (siteId: string): Promise<Quote[]> => {
-    await simulateDelay(500);
-    return mockQuotes.filter(q => q.siteId === siteId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const { data, error } = await supabase
+    .from('quotes')
+    .select('*')
+    .eq('site_id', siteId)
+    .order('date', { ascending: false });
+  
+  if (error) throw error;
+  return data.map(q => ({
+    id: q.id,
+    quoteNumber: q.quote_number,
+    customerId: q.customer_id,
+    siteId: q.site_id,
+    date: q.date,
+    items: q.items,
+    notes: q.notes || '',
+    subtotal: Number(q.subtotal),
+    tax: Number(q.tax),
+    total: Number(q.total),
+    vatRate: Number(q.vat_rate),
+    includeVat: q.include_vat,
+  }));
 };
 
 export const saveQuote = async (quoteData: Omit<Quote, 'id' | 'quoteNumber'>): Promise<Quote> => {
-    await simulateDelay(700);
-    quoteCounter++;
-    const year = new Date().getFullYear();
-    const newQuote: Quote = {
-        id: `quote-${Date.now()}`,
-        quoteNumber: `PREV-${year}-${String(quoteCounter).padStart(3, '0')}`,
-        ...quoteData,
-    };
-    mockQuotes.push(newQuote);
-    console.log("Saved Quotes:", mockQuotes); // For debugging
-    return newQuote;
-};
+  // Get next quote number
+  const year = new Date().getFullYear();
+  const { data: lastQuote } = await supabase
+    .from('quotes')
+    .select('quote_number')
+    .like('quote_number', `PREV-${year}-%`)
+    .order('quote_number', { ascending: false })
+    .limit(1)
+    .single();
+  
+  let nextNum = 1;
+  if (lastQuote) {
+    const parts = lastQuote.quote_number.split('-');
+    nextNum = parseInt(parts[parts.length - 1]) + 1;
+  }
+  
+  const quoteNumber = `PREV-${year}-${String(nextNum).padStart(3, '0')}`;
 
+  const { data, error } = await supabase
+    .from('quotes')
+    .insert([{
+      quote_number: quoteNumber,
+      customer_id: quoteData.customerId,
+      site_id: quoteData.siteId,
+      date: quoteData.date,
+      items: quoteData.items,
+      notes: quoteData.notes,
+      subtotal: quoteData.subtotal,
+      tax: quoteData.tax,
+      total: quoteData.total,
+      vat_rate: quoteData.vatRate,
+      include_vat: quoteData.includeVat,
+    }])
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return {
+    id: data.id,
+    quoteNumber: data.quote_number,
+    customerId: data.customer_id,
+    siteId: data.site_id,
+    date: data.date,
+    items: data.items,
+    notes: data.notes || '',
+    subtotal: Number(data.subtotal),
+    tax: Number(data.tax),
+    total: Number(data.total),
+    vatRate: Number(data.vat_rate),
+    includeVat: data.include_vat,
+  };
+};
 
 // --- Document Import Duplication Check ---
 
@@ -253,14 +423,20 @@ export const createDocumentSignature = (
 };
 
 export const checkDocumentExists = async (signature: string): Promise<boolean> => {
-    await simulateDelay(200);
-    return mockDocumentHistory.includes(signature);
+  const { data, error } = await supabase
+    .from('document_history')
+    .select('id')
+    .eq('signature', signature)
+    .single();
+  
+  if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows found"
+  return !!data;
 };
 
 export const recordDocumentUpload = async (signature: string): Promise<void> => {
-    await simulateDelay(200);
-    if (!mockDocumentHistory.includes(signature)) {
-        mockDocumentHistory.push(signature);
-    }
-    console.log("Document History:", mockDocumentHistory); // For debugging
+  const { error } = await supabase
+    .from('document_history')
+    .insert([{ signature }]);
+  
+  if (error && error.code !== '23505') throw error; // Ignore duplicate signature error
 };
