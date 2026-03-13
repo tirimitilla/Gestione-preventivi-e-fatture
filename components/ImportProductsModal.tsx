@@ -103,7 +103,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
           const prompt = `Date le seguenti categorie: ${JSON.stringify(categoryNames)}. Per ciascuno dei seguenti prodotti, assegna la categoria più appropriata: ${JSON.stringify(productNames)}. Se nessuna è adatta, assegna 'Da Assegnare'. Rispondi con un array di oggetti JSON, con chiavi "prodotto" e "categoria".`;
           
           const response = await ai.models.generateContent({
-              model: 'gemini-1.5-flash-latest', contents: prompt,
+              model: 'gemini-3-flash-preview', contents: prompt,
               config: { 
                 responseMimeType: "application/json",
                 responseSchema: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { prodotto: { type: Type.STRING }, categoria: { type: Type.STRING } }, required: ['prodotto', 'categoria'] } }
@@ -193,7 +193,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
             const { data: base64Data, mimeType } = await fileToBase64(file);
             const ai = new GoogleGenAI({ apiKey });
             const response = await ai.models.generateContent({
-                model: 'gemini-1.5-flash-latest',
+                model: 'gemini-3-flash-preview',
                 contents: { parts: [ { inlineData: { mimeType, data: base64Data } }, { text: 'Estrai fornitore, data (YYYY-MM-DD), e prodotti (nome, quantità, prezzo acquisto, codice). Restituisci JSON puro.' } ] },
                 config: { responseMimeType: "application/json", responseSchema: {
                     type: Type.OBJECT, properties: {
@@ -275,7 +275,7 @@ const ImportProductsModal: React.FC<ImportProductsModalProps> = ({ isOpen, onClo
 
         const ai = new GoogleGenAI({ apiKey });
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash-latest', // Usiamo un modello più stabile per compatibilità
+            model: 'gemini-3-flash-preview',
             contents: { parts: [ { inlineData: { mimeType: 'image/jpeg', data: base64Data } }, { text: 'Estrai fornitore, data (YYYY-MM-DD), e prodotti (nome, quantità, prezzo acquisto, codice). Restituisci JSON puro.' } ] },
             config: { responseMimeType: "application/json", responseSchema: {
                     type: Type.OBJECT, properties: {
