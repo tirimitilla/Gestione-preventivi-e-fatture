@@ -6,7 +6,7 @@ import Spinner from './Spinner';
 import Modal from './Modal';
 import { PlusIcon, ChevronRight, SparklesIcon, DownloadIcon, CalendarIcon, AlertTriangle, TrashIcon } from './icons';
 import { GoogleGenAI, Type } from '@google/genai';
-import { generateChecklistPdf } from '../services/pdfGenerator';
+import { generateChecklistPdf, generateQuotePdf, generateOrderPdf } from '../services/pdfGenerator';
 import AddMaterialModal from './AddMaterialModal';
 
 interface CustomerViewProps {
@@ -137,6 +137,54 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
             const link = document.createElement('a');
             link.href = pdfDataUri;
             link.download = `ListaMateriali-${site.nome.replace(/\s/g, '_')}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            showAlert("Errore durante la generazione del PDF.", "error");
+        }
+    };
+
+    const handleDownloadQuotePdf = async (quote: Quote) => {
+        if (!selectedCustomer) return;
+        try {
+            showAlert("Generazione PDF preventivo in corso...", "info");
+            const shopInfo = await api.getHeaderInfo();
+            const site = sites.find(s => s.id === quote.siteId);
+            const pdfDataUri = generateQuotePdf(quote, selectedCustomer, site, shopInfo);
+
+            const link = document.createElement('a');
+            link.href = pdfDataUri;
+            link.download = `Preventivo-${quote.quoteNumber}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            showAlert("Errore durante la generazione del PDF.", "error");
+        }
+    };
+
+    const handleDownloadPurchasePdf = async (purchase: Purchase) => {
+        if (!selectedCustomer) return;
+        try {
+            showAlert("Generazione PDF nota acquisto in corso...", "info");
+            const shopInfo = await api.getHeaderInfo();
+            const site = sites.find(s => s.id === purchase.siteId);
+            
+            // Map Purchase to Order for the PDF generator
+            const orderData = {
+                customerId: purchase.customerId,
+                siteId: purchase.siteId,
+                date: purchase.date,
+                items: purchase.items,
+                total: purchase.total
+            };
+            
+            const pdfDataUri = generateOrderPdf(orderData, selectedCustomer, site, shopInfo);
+
+            const link = document.createElement('a');
+            link.href = pdfDataUri;
+            link.download = `NotaAcquisto-${purchase.date}.pdf`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -327,7 +375,24 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
                                                 <h4 className="text-sm font-semibold text-gray-600 uppercase mb-2">Preventivi Associati</h4>
                                                 {isLoadingSiteDetails ? <Spinner text="Carico..." /> : (
                                                     <div className="space-y-2">
-                                                        {(siteQuotes[site.id] && siteQuotes[site.id].length > 0) ? siteQuotes[site.id].map(quote => (<div key={quote.id} className="flex justify-between items-center p-2 bg-blue-50 rounded-md text-sm"><span className="font-semibold text-blue-800">{quote.quoteNumber}</span><span className="text-blue-700">{new Date(quote.date).toLocaleDateString('it-IT')}</span><span className="font-bold text-blue-900">€{quote.total.toFixed(2)}</span></div>)) : <p className="text-sm text-gray-500 italic">Nessun preventivo trovato.</p>}
+                                                        {(siteQuotes[site.id] && siteQuotes[site.id].length > 0) ? siteQuotes[site.id].map(quote => (
+                                                            <div key={quote.id} className="flex justify-between items-center p-2 bg-blue-50 rounded-md text-sm">
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-semibold text-blue-800">{quote.quoteNumber}</span>
+                                                                    <span className="text-xs text-blue-600">{new Date(quote.date).toLocaleDateString('it-IT')}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="font-bold text-blue-900">€{quote.total.toFixed(2)}</span>
+                                                                    <button 
+                                                                        onClick={() => handleDownloadQuotePdf(quote)}
+                                                                        className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                                        title="Scarica PDF"
+                                                                    >
+                                                                        <DownloadIcon className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )) : <p className="text-sm text-gray-500 italic">Nessun preventivo trovato.</p>}
                                                     </div>
                                                 )}
                                             </div>
@@ -336,7 +401,35 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
                                                 <h4 className="text-sm font-semibold text-gray-600 uppercase mb-2">Acquisti Registrati</h4>
                                                 {isLoadingSiteDetails ? <Spinner text="Carico..." /> : (
                                                      <div className="space-y-2">
-                                                        {(sitePurchases[site.id] && sitePurchases[site.id].length > 0) ? sitePurchases[site.id].map(purchase => (<details key={purchase.id} className="p-2 bg-green-50 rounded-md text-sm group/purchase"><summary className="flex justify-between items-center cursor-pointer list-none"><span className="font-semibold text-green-800">Acquisto del {new Date(purchase.date).toLocaleDateString('it-IT')}</span><span className="font-bold text-green-900">€{purchase.total.toFixed(2)}</span><span className="text-gray-500 group-open/purchase:rotate-90 transform transition-transform"><ChevronRight className="w-4 h-4" /></span></summary><div className="mt-2 pt-2 border-t border-green-200">{purchase.items.map((item, idx) => (<div key={idx} className="flex justify-between text-xs py-1"><span>{item.quantity}x {item.product.prodotto}</span><span className="font-mono">€{(item.quantity * item.product.prezzoAcquisto).toFixed(2)}</span></div>))}</div></details>)) : <p className="text-sm text-gray-500 italic">Nessun acquisto registrato.</p>}
+                                                        {(sitePurchases[site.id] && sitePurchases[site.id].length > 0) ? sitePurchases[site.id].map(purchase => (
+                                                            <details key={purchase.id} className="p-2 bg-green-50 rounded-md text-sm group/purchase">
+                                                                <summary className="flex justify-between items-center cursor-pointer list-none">
+                                                                    <span className="font-semibold text-green-800">Acquisto del {new Date(purchase.date).toLocaleDateString('it-IT')}</span>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className="font-bold text-green-900">€{purchase.total.toFixed(2)}</span>
+                                                                        <button 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleDownloadPurchasePdf(purchase);
+                                                                            }}
+                                                                            className="p-1 text-green-600 hover:bg-green-100 rounded"
+                                                                            title="Scarica PDF"
+                                                                        >
+                                                                            <DownloadIcon className="w-4 h-4" />
+                                                                        </button>
+                                                                        <span className="text-gray-500 group-open/purchase:rotate-90 transform transition-transform"><ChevronRight className="w-4 h-4" /></span>
+                                                                    </div>
+                                                                </summary>
+                                                                <div className="mt-2 pt-2 border-t border-green-200">
+                                                                    {purchase.items.map((item, idx) => (
+                                                                        <div key={idx} className="flex justify-between text-xs py-1">
+                                                                            <span>{item.quantity}x {item.product.prodotto}</span>
+                                                                            <span className="font-mono">€{(item.quantity * item.product.prezzoAcquisto).toFixed(2)}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </details>
+                                                        )) : <p className="text-sm text-gray-500 italic">Nessun acquisto registrato.</p>}
                                                     </div>
                                                 )}
                                             </div>
