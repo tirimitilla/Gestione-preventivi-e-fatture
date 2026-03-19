@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ShopInfo, Category, Product, QuoteItem, PurchaseItem } from './types';
+import { ShopInfo, Category, Product, QuoteItem, PurchaseItem, Quote } from './types';
 import * as api from './services/apiService';
 import Header from './components/Header';
 import InventoryView from './components/InventoryView';
@@ -43,6 +43,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [alert, setAlert] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Inventory);
+  const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -61,6 +62,11 @@ const App: React.FC = () => {
   const showAlert = (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
     setAlert({ message, type });
     setTimeout(() => setAlert(null), 3000);
+  };
+
+  const handleEditQuote = (quote: Quote) => {
+    setEditingQuote(quote);
+    setActiveTab(Tab.QuoteBuilder);
   };
 
   const loadInitialData = useCallback(async () => {
@@ -172,10 +178,18 @@ const App: React.FC = () => {
               quoteItems={quoteItems}
               setQuoteItems={setQuoteItems}
               showAlert={showAlert}
+              editingQuote={editingQuote}
+              onCancelEdit={() => {
+                setEditingQuote(null);
+                setActiveTab(Tab.Customers);
+              }}
+              onQuoteSaved={() => {
+                setEditingQuote(null);
+              }}
             />
           )}
           {activeTab === Tab.Customers && (
-            <CustomerView showAlert={showAlert} />
+            <CustomerView showAlert={showAlert} onEditQuote={handleEditQuote} />
           )}
           {activeTab === Tab.Purchases && (
             <PurchaseView showAlert={showAlert} />

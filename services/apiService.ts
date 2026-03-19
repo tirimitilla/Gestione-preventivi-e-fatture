@@ -407,6 +407,42 @@ export const saveQuote = async (quoteData: Omit<Quote, 'id' | 'quoteNumber'>): P
   };
 };
 
+export const updateQuote = async (quoteId: string, quoteData: Omit<Quote, 'id' | 'quoteNumber'>): Promise<Quote> => {
+  const { data, error } = await supabase
+    .from('quotes')
+    .update({
+      customer_id: quoteData.customerId,
+      site_id: quoteData.siteId,
+      date: quoteData.date,
+      items: quoteData.items,
+      notes: quoteData.notes,
+      subtotal: quoteData.subtotal,
+      tax: quoteData.tax,
+      total: quoteData.total,
+      vat_rate: quoteData.vatRate,
+      include_vat: quoteData.includeVat,
+    })
+    .eq('id', quoteId)
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return {
+    id: data.id,
+    quoteNumber: data.quote_number,
+    customerId: data.customer_id,
+    siteId: data.site_id,
+    date: data.date,
+    items: data.items,
+    notes: data.notes || '',
+    subtotal: Number(data.subtotal),
+    tax: Number(data.tax),
+    total: Number(data.total),
+    vatRate: Number(data.vat_rate),
+    includeVat: data.include_vat,
+  };
+};
+
 // --- Document Import Duplication Check ---
 
 export const createDocumentSignature = (

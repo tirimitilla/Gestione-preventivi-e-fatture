@@ -11,9 +11,20 @@ interface QuoteBuilderViewProps {
   quoteItems: QuoteItem[];
   setQuoteItems: React.Dispatch<React.SetStateAction<QuoteItem[]>>;
   showAlert: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
+  editingQuote?: Quote | null;
+  onCancelEdit?: () => void;
+  onQuoteSaved?: () => void;
 }
 
-const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ categories, quoteItems, setQuoteItems, showAlert }) => {
+const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ 
+  categories, 
+  quoteItems, 
+  setQuoteItems, 
+  showAlert, 
+  editingQuote,
+  onCancelEdit,
+  onQuoteSaved
+}) => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,6 +67,26 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ categories, quoteIt
   useEffect(() => {
     loadInitialQuoteData();
   }, [loadInitialQuoteData]);
+
+  useEffect(() => {
+    if (editingQuote) {
+        setQuoteItems(editingQuote.items);
+        setSelectedCustomerId(editingQuote.customerId);
+        setSelectedSiteId(editingQuote.siteId || '');
+        setQuoteDate(editingQuote.date);
+        setNotes(editingQuote.notes);
+        setSavedQuoteNumber(editingQuote.quoteNumber);
+        setIncludeVat(editingQuote.includeVat);
+    } else {
+        setQuoteItems([]);
+        setSelectedCustomerId('');
+        setSelectedSiteId('');
+        setQuoteDate(new Date().toISOString().slice(0, 10));
+        setNotes('');
+        setSavedQuoteNumber(null);
+        setIncludeVat(true);
+    }
+  }, [editingQuote, setQuoteItems]);
 
   useEffect(() => {
     const fetchSites = async () => {
@@ -161,14 +192,23 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ categories, quoteIt
     };
     
     try {
-        const savedQuote = await api.saveQuote(quoteData);
+        let savedQuote: Quote;
+        if (editingQuote) {
+            savedQuote = await api.updateQuote(editingQuote.id, quoteData);
+            showAlert('Preventivo aggiornato! Anteprima pronta.', 'success');
+        } else {
+            savedQuote = await api.saveQuote(quoteData);
+            showAlert('Preventivo salvato! Anteprima pronta.', 'success');
+        }
+        
         setSavedQuoteNumber(savedQuote.quoteNumber);
         setLastSavedQuote(savedQuote);
-        showAlert('Preventivo salvato! Anteprima pronta.', 'success');
         
         const pdfDataUri = generateQuotePdf(savedQuote, selectedCustomer, selectedSite, shopInfo);
         setPdfPreviewUrl(pdfDataUri);
         setIsPdfPreviewOpen(true);
+        
+        if (onQuoteSaved) onQuoteSaved();
 
     } catch (error) {
         showAlert('Errore nel salvataggio del preventivo.', 'error');
@@ -224,7 +264,7 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ categories, quoteIt
             <div id="quote-preview" className="bg-white p-6 rounded-lg shadow">
                 <div className="flex justify-between items-start mb-6">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900">Preventivo Proforma</h2>
+                      <h2 className="text-2xl font-bold text-gray-900">{editingQuote ? 'Modifica Preventivo' : 'Preventivo Proforma'}</h2>
                       {selectedCustomer && (
                         <div className="mt-2 text-sm text-gray-600">
                           <p className="font-bold text-base text-gray-800">{selectedCustomer.ragioneSociale}</p>
@@ -370,10 +410,15 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ categories, quoteIt
                     </div>
                 </div>
             </div>
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-end space-x-3">
+                {editingQuote && (
+                    <button onClick={onCancelEdit} className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-md hover:bg-gray-300 transition">
+                        Annulla Modifica
+                    </button>
+                )}
                 <button onClick={handleSaveAndPreview} className="inline-flex items-center px-4 py-2 bg-primary-blue text-white font-semibold rounded-md hover:opacity-90 transition">
                     <EyeIcon className="h-5 w-5 mr-2" />
-                    Salva e Crea Anteprima
+                    {editingQuote ? 'Aggiorna e Crea Anteprima' : 'Salva e Crea Anteprima'}
                 </button>
             </div>
         </div>

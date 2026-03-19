@@ -4,16 +4,17 @@ import { Customer, ConstructionSite, Quote, Purchase, Product, SiteMaterial } fr
 import * as api from '../services/apiService';
 import Spinner from './Spinner';
 import Modal from './Modal';
-import { PlusIcon, ChevronRight, SparklesIcon, DownloadIcon, CalendarIcon, AlertTriangle, TrashIcon } from './icons';
+import { PlusIcon, ChevronRight, SparklesIcon, DownloadIcon, CalendarIcon, AlertTriangle, TrashIcon, EditIcon } from './icons';
 import { GoogleGenAI, Type } from '@google/genai';
 import { generateChecklistPdf, generateQuotePdf, generateOrderPdf } from '../services/pdfGenerator';
 import AddMaterialModal from './AddMaterialModal';
 
 interface CustomerViewProps {
   showAlert: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
+  onEditQuote: (quote: Quote) => void;
 }
 
-const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
+const CustomerView: React.FC<CustomerViewProps> = ({ showAlert, onEditQuote }) => {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [sites, setSites] = useState<ConstructionSite[]>([]);
@@ -383,6 +384,13 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert }) => {
                                                                 </div>
                                                                 <div className="flex items-center gap-3">
                                                                     <span className="font-bold text-blue-900">€{quote.total.toFixed(2)}</span>
+                                                                    <button 
+                                                                        onClick={() => onEditQuote(quote)}
+                                                                        className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                                        title="Modifica Preventivo"
+                                                                    >
+                                                                        <EditIcon className="w-4 h-4" />
+                                                                    </button>
                                                                     <button 
                                                                         onClick={() => handleDownloadQuotePdf(quote)}
                                                                         className="p-1 text-blue-600 hover:bg-blue-100 rounded"
