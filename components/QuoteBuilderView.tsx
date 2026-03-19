@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Product, QuoteItem, Customer, ConstructionSite, ShopInfo, Quote, Category } from '../types';
 import * as api from '../services/apiService';
-import { PlusIcon, SearchIcon, TrashIcon, DownloadIcon, EyeIcon } from './icons';
+import { PlusIcon, SearchIcon, TrashIcon, DownloadIcon, EyeIcon, SaveIcon } from './icons';
 import Spinner from './Spinner';
 import Modal from './Modal';
 import { generateQuotePdf } from '../services/pdfGenerator';
@@ -14,6 +14,7 @@ interface QuoteBuilderViewProps {
   editingQuote?: Quote | null;
   onCancelEdit?: () => void;
   onQuoteSaved?: () => void;
+  documentType?: 'quote' | 'proforma';
 }
 
 const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ 
@@ -23,7 +24,8 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
   showAlert, 
   editingQuote,
   onCancelEdit,
-  onQuoteSaved
+  onQuoteSaved,
+  documentType = 'quote'
 }) => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -133,6 +135,36 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
       )
     );
   };
+
+  const handleDescriptionChange = (productId: string, newDescription: string) => {
+    setQuoteItems(prevItems =>
+      prevItems.map(item =>
+        item.product.id === productId
+          ? { ...item, product: { ...item.product, prodotto: newDescription } }
+          : item
+      )
+    );
+  };
+
+  const handlePriceChange = (productId: string, newPrice: number) => {
+    setQuoteItems(prevItems =>
+      prevItems.map(item =>
+        item.product.id === productId
+          ? { ...item, product: { ...item.product, prezzoVendita: newPrice } }
+          : item
+      )
+    );
+  };
+
+  const handleUpdateInventory = async (product: Product) => {
+    try {
+      await api.updateProduct(product.id, product);
+      showAlert('Prodotto aggiornato in inventario', 'success');
+      setAllProducts(prev => prev.map(p => p.id === product.id ? product : p));
+    } catch (error) {
+      showAlert('Errore aggiornamento inventario', 'error');
+    }
+  };
   
   const handleRemoveFromQuote = (productId: string) => {
     setQuoteItems(prevItems => prevItems.filter(item => item.product.id !== productId));
@@ -188,17 +220,18 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
         tax,
         total,
         vatRate: effectiveVatRate,
-        includeVat: includeVat
+        includeVat: includeVat,
+        documentType: documentType
     };
     
     try {
         let savedQuote: Quote;
         if (editingQuote) {
             savedQuote = await api.updateQuote(editingQuote.id, quoteData);
-            showAlert('Preventivo aggiornato! Anteprima pronta.', 'success');
+            showAlert('Documento aggiornato! Anteprima pronta.', 'success');
         } else {
             savedQuote = await api.saveQuote(quoteData);
-            showAlert('Preventivo salvato! Anteprima pronta.', 'success');
+            showAlert('Documento salvato! Anteprima pronta.', 'success');
         }
         
         setSavedQuoteNumber(savedQuote.quoteNumber);
@@ -264,7 +297,11 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
             <div id="quote-preview" className="bg-white p-6 rounded-lg shadow">
                 <div className="flex justify-between items-start mb-6">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900">{editingQuote ? 'Modifica Preventivo' : 'Preventivo Proforma'}</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                        {editingQuote 
+                            ? (documentType === 'proforma' ? 'Modifica Fattura Proforma' : 'Modifica Preventivo') 
+                            : (documentType === 'proforma' ? 'Fattura Proforma' : 'Preventivo Proforma')}
+                    </h2>
                       {selectedCustomer && (
                         <div className="mt-2 text-sm text-gray-600">
                           <p className="font-bold text-base text-gray-800">{selectedCustomer.ragioneSociale}</p>
@@ -319,10 +356,26 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
                                 {/* Mobile View */}
                                 <div className="sm:hidden">
                                     <div className="flex justify-between items-start">
-                                        <p className="font-bold text-gray-800 flex-1 pr-2">{item.product.prodotto}</p>
-                                        <button onClick={() => handleRemoveFromQuote(item.product.id)} className="text-red-500 hover:text-red-700 -mt-1 -mr-1 p-1">
-                                            <TrashIcon className="h-5 w-5" />
-                                        </button>
+                                        <div className="flex-1 pr-2">
+                                            <input 
+                                                type="text" 
+                                                value={item.product.prodotto} 
+                                                onChange={e => handleDescriptionChange(item.product.id, e.target.value)}
+                                                className="w-full border rounded-md p-1 font-bold text-gray-800"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <button onClick={() => handleRemoveFromQuote(item.product.id)} className="text-red-500 hover:text-red-700 p-1">
+                                                <TrashIcon className="h-5 w-5" />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleUpdateInventory(item.product)}
+                                                title="Salva in inventario"
+                                                className="text-indigo-600 hover:text-indigo-800 p-1"
+                                            >
+                                                <SaveIcon className="h-5 w-5" />
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="mt-3 grid grid-cols-3 gap-2 items-center text-center">
                                         <div>
@@ -335,8 +388,14 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
                                             />
                                         </div>
                                         <div>
-                                            <p className="text-xs text-gray-500">Prezzo Unit.</p>
-                                            <p className="font-medium text-gray-700 mt-1">€{item.product.prezzoVendita.toFixed(2)}</p>
+                                            <p className="text-xs text-gray-500 mb-1">Prezzo Unit.</p>
+                                            <input 
+                                                type="number" 
+                                                step="0.01"
+                                                value={item.product.prezzoVendita} 
+                                                onChange={e => handlePriceChange(item.product.id, parseFloat(e.target.value))}
+                                                className="w-full text-center border rounded-md p-1 font-medium text-gray-700"
+                                            />
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-500">Totale</p>
@@ -346,7 +405,21 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
                                 </div>
 
                                 {/* Desktop View */}
-                                <div className="hidden sm:col-span-5 sm:block font-medium text-gray-900">{item.product.prodotto}</div>
+                                <div className="hidden sm:col-span-5 sm:flex sm:items-center sm:gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={item.product.prodotto} 
+                                        onChange={e => handleDescriptionChange(item.product.id, e.target.value)}
+                                        className="flex-1 border rounded-md p-1 font-medium text-gray-900"
+                                    />
+                                    <button 
+                                        onClick={() => handleUpdateInventory(item.product)}
+                                        title="Salva in inventario"
+                                        className="text-indigo-600 hover:text-indigo-800 p-1"
+                                    >
+                                        <SaveIcon className="h-4 w-4" />
+                                    </button>
+                                </div>
                                 <div className="hidden sm:col-span-2 sm:flex sm:justify-center">
                                     <input 
                                         type="number" 
@@ -355,7 +428,15 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
                                         className="w-16 text-center border rounded-md p-1"
                                     />
                                 </div>
-                                <div className="hidden sm:col-span-2 sm:block text-right text-gray-700">€{item.product.prezzoVendita.toFixed(2)}</div>
+                                <div className="hidden sm:col-span-2 sm:block text-right text-gray-700">
+                                    <input 
+                                        type="number" 
+                                        step="0.01"
+                                        value={item.product.prezzoVendita} 
+                                        onChange={e => handlePriceChange(item.product.id, parseFloat(e.target.value))}
+                                        className="w-24 text-right border rounded-md p-1"
+                                    />
+                                </div>
                                 <div className="hidden sm:col-span-2 sm:block text-right font-semibold text-gray-900">€{(item.product.prezzoVendita * item.quantity).toFixed(2)}</div>
                                 <div className="hidden sm:col-span-1 sm:flex sm:items-center sm:justify-end">
                                     <button onClick={() => handleRemoveFromQuote(item.product.id)} className="text-red-500 hover:text-red-700 p-1">

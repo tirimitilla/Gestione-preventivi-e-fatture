@@ -14,6 +14,7 @@ import OrderMaterialsView from './components/OrderMaterialsView';
 enum Tab {
   Inventory,
   QuoteBuilder,
+  ProformaInvoice,
   Customers,
   Purchases,
   OrderMaterials,
@@ -22,6 +23,7 @@ enum Tab {
 const tabNames = {
   [Tab.Inventory]: 'Inventario',
   [Tab.QuoteBuilder]: 'Crea Preventivo',
+  [Tab.ProformaInvoice]: 'Crea Fattura Proforma',
   [Tab.Customers]: 'Clienti e Cantieri',
   [Tab.Purchases]: 'Registra Acquisti',
   [Tab.OrderMaterials]: 'Crea Ordine Materiali',
@@ -66,7 +68,11 @@ const App: React.FC = () => {
 
   const handleEditQuote = (quote: Quote) => {
     setEditingQuote(quote);
-    setActiveTab(Tab.QuoteBuilder);
+    if (quote.documentType === 'proforma' || quote.quoteNumber.startsWith('PROF')) {
+      setActiveTab(Tab.ProformaInvoice);
+    } else {
+      setActiveTab(Tab.QuoteBuilder);
+    }
   };
 
   const loadInitialData = useCallback(async () => {
@@ -179,6 +185,24 @@ const App: React.FC = () => {
               setQuoteItems={setQuoteItems}
               showAlert={showAlert}
               editingQuote={editingQuote}
+              documentType="quote"
+              onCancelEdit={() => {
+                setEditingQuote(null);
+                setActiveTab(Tab.Customers);
+              }}
+              onQuoteSaved={() => {
+                setEditingQuote(null);
+              }}
+            />
+          )}
+          {activeTab === Tab.ProformaInvoice && (
+            <QuoteBuilderView 
+              categories={categories}
+              quoteItems={quoteItems}
+              setQuoteItems={setQuoteItems}
+              showAlert={showAlert}
+              editingQuote={editingQuote}
+              documentType="proforma"
               onCancelEdit={() => {
                 setEditingQuote(null);
                 setActiveTab(Tab.Customers);

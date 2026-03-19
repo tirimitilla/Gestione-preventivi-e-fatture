@@ -354,12 +354,15 @@ export const getQuotesForSite = async (siteId: string): Promise<Quote[]> => {
 };
 
 export const saveQuote = async (quoteData: Omit<Quote, 'id' | 'quoteNumber'>): Promise<Quote> => {
+  const documentType = quoteData.documentType || 'quote';
+  const prefix = documentType === 'quote' ? 'PREV' : 'PROF';
+  
   // Get next quote number
   const year = new Date().getFullYear();
   const { data: lastQuote } = await supabase
     .from('quotes')
     .select('quote_number')
-    .like('quote_number', `PREV-${year}-%`)
+    .like('quote_number', `${prefix}-${year}-%`)
     .order('quote_number', { ascending: false })
     .limit(1)
     .single();
@@ -370,7 +373,7 @@ export const saveQuote = async (quoteData: Omit<Quote, 'id' | 'quoteNumber'>): P
     nextNum = parseInt(parts[parts.length - 1]) + 1;
   }
   
-  const quoteNumber = `PREV-${year}-${String(nextNum).padStart(3, '0')}`;
+  const quoteNumber = `${prefix}-${year}-${String(nextNum).padStart(3, '0')}`;
 
   const { data, error } = await supabase
     .from('quotes')
@@ -386,11 +389,50 @@ export const saveQuote = async (quoteData: Omit<Quote, 'id' | 'quoteNumber'>): P
       total: quoteData.total,
       vat_rate: quoteData.vatRate,
       include_vat: quoteData.includeVat,
+      document_type: documentType, // Attempt to save, if column doesn't exist it might fail or be ignored
     }])
     .select()
     .single();
   
-  if (error) throw error;
+  if (error) {
+    // If document_type column doesn't exist, try without it
+    if (error.code === 'PGRST204' || error.message.includes('column "document_type" does not exist')) {
+        const { data: data2, error: error2 } = await supabase
+            .from('quotes')
+            .insert([{
+                quote_number: quoteNumber,
+                customer_id: quoteData.customerId,
+                site_id: quoteData.siteId,
+                date: quoteData.date,
+                items: quoteData.items,
+                notes: quoteData.notes,
+                subtotal: quoteData.subtotal,
+                tax: quoteData.tax,
+                total: quoteData.total,
+                vat_rate: quoteData.vatRate,
+                include_vat: quoteData.includeVat,
+            }])
+            .select()
+            .single();
+        if (error2) throw error2;
+        return {
+            id: data2.id,
+            quoteNumber: data2.quote_number,
+            customerId: data2.customer_id,
+            siteId: data2.site_id,
+            date: data2.date,
+            items: data2.items,
+            notes: data2.notes || '',
+            subtotal: Number(data2.subtotal),
+            tax: Number(data2.tax),
+            total: Number(data2.total),
+            vatRate: Number(data2.vat_rate),
+            includeVat: data2.include_vat,
+            documentType: data2.quote_number.startsWith('PROF') ? 'proforma' : 'quote'
+        };
+    }
+    throw error;
+  }
   return {
     id: data.id,
     quoteNumber: data.quote_number,
@@ -404,10 +446,13 @@ export const saveQuote = async (quoteData: Omit<Quote, 'id' | 'quoteNumber'>): P
     total: Number(data.total),
     vatRate: Number(data.vat_rate),
     includeVat: data.include_vat,
+    documentType: data.document_type || (data.quote_number.startsWith('PROF') ? 'proforma' : 'quote')
   };
 };
 
 export const updateQuote = async (quoteId: string, quoteData: Omit<Quote, 'id' | 'quoteNumber'>): Promise<Quote> => {
+  const documentType = quoteData.documentType || 'quote';
+  
   const { data, error } = await supabase
     .from('quotes')
     .update({
@@ -421,12 +466,50 @@ export const updateQuote = async (quoteId: string, quoteData: Omit<Quote, 'id' |
       total: quoteData.total,
       vat_rate: quoteData.vatRate,
       include_vat: quoteData.includeVat,
+      document_type: documentType,
     })
     .eq('id', quoteId)
     .select()
     .single();
   
-  if (error) throw error;
+  if (error) {
+    if (error.code === 'PGRST204' || error.message.includes('column "document_type" does not exist')) {
+        const { data: data2, error: error2 } = await supabase
+            .from('quotes')
+            .update({
+                customer_id: quoteData.customerId,
+                site_id: quoteData.siteId,
+                date: quoteData.date,
+                items: quoteData.items,
+                notes: quoteData.notes,
+                subtotal: quoteData.subtotal,
+                tax: quoteData.tax,
+                total: quoteData.total,
+                vat_rate: quoteData.vatRate,
+                include_vat: quoteData.includeVat,
+            })
+            .eq('id', quoteId)
+            .select()
+            .single();
+        if (error2) throw error2;
+        return {
+            id: data2.id,
+            quoteNumber: data2.quote_number,
+            customerId: data2.customer_id,
+            siteId: data2.site_id,
+            date: data2.date,
+            items: data2.items,
+            notes: data2.notes || '',
+            subtotal: Number(data2.subtotal),
+            tax: Number(data2.tax),
+            total: Number(data2.total),
+            vatRate: Number(data2.vat_rate),
+            includeVat: data2.include_vat,
+            documentType: data2.quote_number.startsWith('PROF') ? 'proforma' : 'quote'
+        };
+    }
+    throw error;
+  }
   return {
     id: data.id,
     quoteNumber: data.quote_number,
@@ -440,6 +523,7 @@ export const updateQuote = async (quoteId: string, quoteData: Omit<Quote, 'id' |
     total: Number(data.total),
     vatRate: Number(data.vat_rate),
     includeVat: data.include_vat,
+    documentType: data.document_type || (data.quote_number.startsWith('PROF') ? 'proforma' : 'quote')
   };
 };
 

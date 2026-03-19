@@ -36,11 +36,13 @@ export const generateQuotePdf = (
 
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('PREVENTIVO', pageWidth - margin, 25, { align: 'right' });
+    const title = quote.documentType === 'proforma' || quote.quoteNumber.startsWith('PROF') ? 'FATTURA PROFORMA' : 'PREVENTIVO';
+    doc.text(title, pageWidth - margin, 25, { align: 'right' });
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Numero: ${quote.quoteNumber}`, pageWidth - margin, 32, { align: 'right' });
+    const numberLabel = quote.documentType === 'proforma' || quote.quoteNumber.startsWith('PROF') ? 'N. Proforma:' : 'Numero:';
+    doc.text(`${numberLabel} ${quote.quoteNumber}`, pageWidth - margin, 32, { align: 'right' });
     doc.text(`Data: ${new Date(quote.date).toLocaleDateString('it-IT')}`, pageWidth - margin, 37, { align: 'right' });
 
     doc.setLineWidth(0.5);
@@ -138,7 +140,12 @@ export const generateQuotePdf = (
     doc.setFontSize(8);
     doc.setTextColor(100);
     doc.text(`Condizioni di pagamento: ${shopInfo.paymentConditions}`, margin, footerY);
-    doc.text(`IBAN: ${shopInfo.iban} - ${shopInfo.companyName}`, margin, footerY + 4);
+    
+    let ibanLine = `IBAN: ${shopInfo.iban} - ${shopInfo.companyName}`;
+    if (quote.documentType === 'proforma' || quote.quoteNumber.startsWith('PROF')) {
+        ibanLine += ` - Fattura pro Forma non valida ai fini fiscali`;
+    }
+    doc.text(ibanLine, margin, footerY + 4);
     doc.text('Grazie per la vostra fiducia.', margin, footerY + 10);
     doc.setLineWidth(0.2);
     doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);

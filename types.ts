@@ -86,6 +86,7 @@ export interface Quote {
   total: number;
   vatRate: number; // Represents the effective VAT rate for the whole quote
   includeVat: boolean;
+  documentType?: 'quote' | 'proforma';
 }
 
 export interface Order {
