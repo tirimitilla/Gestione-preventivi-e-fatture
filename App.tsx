@@ -84,14 +84,20 @@ const App: React.FC = () => {
       ]);
       setShopInfo(info);
       setCategories(cats);
-    } catch (error) {
-      showAlert('Errore nel caricamento dei dati iniziali', 'error');
+    } catch (error: any) {
+      console.error("Error loading initial data:", error);
+      showAlert(`Errore nel caricamento dei dati: ${error.message || 'Errore sconosciuto'}`, 'error');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseKey) {
+      showAlert('Configurazione Supabase mancante. Verifica le impostazioni (VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY).', 'warning');
+    }
     loadInitialData();
   }, [loadInitialData]);
 

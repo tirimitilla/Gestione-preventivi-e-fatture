@@ -7,33 +7,33 @@ export const UNCATEGORIZED_CAT_ID = 'da-assegnare-id'; // Will be updated dynami
 // --- HELPERS ---
 const mapProduct = (p: any): Product => ({
   id: p.id,
-  categoryId: p.category_id,
-  codiceProdotto: p.codice_prodotto,
-  prodotto: p.prodotto,
-  quantita: Number(p.quantita),
-  prezzoAcquisto: Number(p.prezzo_acquisto),
-  prezzoVendita: Number(p.prezzo_vendita),
+  categoryId: p.category_id || p.categoryId,
+  codiceProdotto: p.codice_prodotto || p.codiceProdotto || 'N/A',
+  prodotto: p.prodotto || p.Prodotto || 'Senza Nome',
+  quantita: Number(p.quantita || p.Quantita || 0),
+  prezzoAcquisto: Number(p.prezzo_acquisto || p.prezzoAcquisto || 0),
+  prezzoVendita: Number(p.prezzo_vendita || p.prezzoVendita || 0),
 });
 
 const mapCustomer = (c: any): Customer => ({
   id: c.id,
-  ragioneSociale: c.ragione_sociale,
-  piva: c.piva || '',
-  codiceFiscale: c.codice_fiscale || '',
-  indirizzo: c.indirizzo || '',
-  citta: c.citta || '',
-  cap: c.cap || '',
-  provincia: c.provincia || '',
-  email: c.email || '',
-  telefono: c.telefono || '',
+  ragioneSociale: c.ragione_sociale || c.ragioneSociale || 'Senza Nome',
+  piva: c.piva || c.pIva || '',
+  codiceFiscale: c.codice_fiscale || c.codiceFiscale || '',
+  indirizzo: c.indirizzo || c.Indirizzo || '',
+  citta: c.citta || c.Citta || '',
+  cap: c.cap || c.Cap || '',
+  provincia: c.provincia || c.Provincia || '',
+  email: c.email || c.Email || '',
+  telefono: c.telefono || c.Telefono || '',
 });
 
 const mapSite = (s: any): ConstructionSite => ({
   id: s.id,
-  customerId: s.customer_id,
-  nome: s.nome,
-  indirizzo: s.indirizzo || '',
-  materialeDaAcquistare: s.materiale_da_acquistare || [],
+  customerId: s.customer_id || s.customerId,
+  nome: s.nome || s.Nome || 'Senza Nome',
+  indirizzo: s.indirizzo || s.Indirizzo || '',
+  materialeDaAcquistare: s.materiale_da_acquistare || s.materialeDaAcquistare || [],
 });
 
 // --- API FUNCTIONS ---

@@ -50,8 +50,9 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert, onEditQuote }) =
             if (customersData.length > 0 && !selectedCustomer) {
                 setSelectedCustomer(customersData[0]);
             }
-        } catch (error) {
-            showAlert('Errore nel caricamento dei dati iniziali', 'error');
+        } catch (error: any) {
+            console.error("Error loading initial data:", error);
+            showAlert(`Errore nel caricamento dei dati: ${error.message || 'Errore sconosciuto'}`, 'error');
         } finally {
             setIsLoadingCustomers(false);
         }
