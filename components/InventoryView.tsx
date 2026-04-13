@@ -15,11 +15,12 @@ interface InventoryViewProps {
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   showAlert: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
+  onProductsChange: () => void;
+  allCustomers: Customer[];
 }
 
-const InventoryView: React.FC<InventoryViewProps> = ({ categories, setCategories, showAlert }) => {
+const InventoryView: React.FC<InventoryViewProps> = ({ categories, setCategories, showAlert, onProductsChange, allCustomers }) => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,18 +36,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({ categories, setCategories
       setSelectedCategoryId(categories[0].id);
     }
   }, [categories, selectedCategoryId]);
-
-  useEffect(() => {
-    const fetchCustomers = async () => {
-        try {
-            const customers = await api.getCustomers();
-            setAllCustomers(customers);
-        } catch (error) {
-            showAlert("Errore nel caricamento dei clienti.", 'error');
-        }
-    };
-    fetchCustomers();
-  }, [showAlert]);
 
   const loadProducts = useCallback(async (categoryId: string) => {
     if (!categoryId) {
@@ -100,6 +89,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ categories, setCategories
         showAlert('Prodotto aggiunto con successo', 'success');
       }
       handleCloseFormModal();
+      onProductsChange();
       if (productData.categoryId !== selectedCategoryId) {
         setSelectedCategoryId(productData.categoryId);
       } else {
@@ -115,6 +105,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ categories, setCategories
       try {
         await api.deleteProduct(productId);
         showAlert('Prodotto eliminato', 'success');
+        onProductsChange();
         loadProducts(selectedCategoryId);
       } catch (error) {
         showAlert('Errore nell\'eliminazione del prodotto', 'error');
@@ -137,16 +128,9 @@ const InventoryView: React.FC<InventoryViewProps> = ({ categories, setCategories
       // Data has changed, so we need a full refresh
       setIsLoading(true);
       try {
-          const cats = await api.getCategories();
-          setCategories(cats);
-          
-          const currentCategoryStillExists = cats.some(c => c.id === selectedCategoryId);
-          if (currentCategoryStillExists) {
+          onProductsChange();
+          if (selectedCategoryId) {
               await loadProducts(selectedCategoryId);
-          } else if (cats.length > 0) {
-              setSelectedCategoryId(cats[0].id);
-          } else {
-              setProducts([]);
           }
       } catch (e) {
           showAlert("Errore durante l'aggiornamento dei dati.", 'error');

@@ -8,6 +8,9 @@ import { generateQuotePdf } from '../services/pdfGenerator';
 
 interface QuoteBuilderViewProps {
   categories: Category[];
+  allProducts: Product[];
+  allCustomers: Customer[];
+  shopInfo: ShopInfo | null;
   quoteItems: QuoteItem[];
   setQuoteItems: React.Dispatch<React.SetStateAction<QuoteItem[]>>;
   showAlert: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
@@ -19,6 +22,9 @@ interface QuoteBuilderViewProps {
 
 const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({ 
   categories, 
+  allProducts: initialProducts,
+  allCustomers,
+  shopInfo: initialShopInfo,
   quoteItems, 
   setQuoteItems, 
   showAlert, 
@@ -27,19 +33,26 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
   onQuoteSaved,
   documentType = 'quote'
 }) => {
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [customerSites, setCustomerSites] = useState<ConstructionSite[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedSiteId, setSelectedSiteId] = useState<string>('');
 
   const [quoteDate, setQuoteDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState('');
-  const [shopInfo, setShopInfo] = useState<ShopInfo | null>(null);
+  const [shopInfo, setShopInfo] = useState<ShopInfo | null>(initialShopInfo);
   const [savedQuoteNumber, setSavedQuoteNumber] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAllProducts(initialProducts);
+  }, [initialProducts]);
+
+  useEffect(() => {
+    setShopInfo(initialShopInfo);
+  }, [initialShopInfo]);
   
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('');
@@ -47,28 +60,6 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
   const [includeVat, setIncludeVat] = useState(true);
 
   const categoryMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories]);
-
-  const loadInitialQuoteData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-        const [products, customers, info] = await Promise.all([
-            api.getAllProducts(),
-            api.getCustomers(),
-            api.getHeaderInfo()
-        ]);
-        setAllProducts(products);
-        setAllCustomers(customers);
-        setShopInfo(info);
-    } catch (error) {
-        showAlert('Errore nel caricamento dati per il preventivo', 'error');
-    } finally {
-        setIsLoading(false);
-    }
-  }, [showAlert]);
-
-  useEffect(() => {
-    loadInitialQuoteData();
-  }, [loadInitialQuoteData]);
 
   useEffect(() => {
     if (editingQuote) {

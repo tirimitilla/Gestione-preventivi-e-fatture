@@ -12,13 +12,14 @@ import AddMaterialModal from './AddMaterialModal';
 interface CustomerViewProps {
   showAlert: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
   onEditQuote: (quote: Quote) => void;
+  allCustomers: Customer[];
+  allProducts: Product[];
+  onDataChange: () => void;
 }
 
-const CustomerView: React.FC<CustomerViewProps> = ({ showAlert, onEditQuote }) => {
-    const [customers, setCustomers] = useState<Customer[]>([]);
+const CustomerView: React.FC<CustomerViewProps> = ({ showAlert, onEditQuote, allCustomers, allProducts, onDataChange }) => {
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [sites, setSites] = useState<ConstructionSite[]>([]);
-    const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
     const [isLoadingSites, setIsLoadingSites] = useState(false);
 
     const [siteQuotes, setSiteQuotes] = useState<Record<string, Quote[]>>({});
@@ -32,35 +33,16 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert, onEditQuote }) =
     const [newSiteForm, setNewSiteForm] = useState({ nome: '', indirizzo: '' });
     const [isAutofilling, setIsAutofilling] = useState(false);
 
-    const [allProducts, setAllProducts] = useState<Product[]>([]);
     const productMap = useMemo(() => new Map(allProducts.map(p => [p.id, p])), [allProducts]);
     
     const [isAddMaterialModalOpen, setIsAddMaterialModalOpen] = useState(false);
     const [siteToEdit, setSiteToEdit] = useState<ConstructionSite | null>(null);
 
-    const loadInitialData = useCallback(async () => {
-        setIsLoadingCustomers(true);
-        try {
-            const [customersData, productsData] = await Promise.all([
-                api.getCustomers(),
-                api.getAllProducts()
-            ]);
-            setCustomers(customersData);
-            setAllProducts(productsData);
-            if (customersData.length > 0 && !selectedCustomer) {
-                setSelectedCustomer(customersData[0]);
-            }
-        } catch (error: any) {
-            console.error("Error loading initial data:", error);
-            showAlert(`Errore nel caricamento dei dati: ${error.message || 'Errore sconosciuto'}`, 'error');
-        } finally {
-            setIsLoadingCustomers(false);
-        }
-    }, [showAlert, selectedCustomer]);
-
     useEffect(() => {
-        loadInitialData();
-    }, [loadInitialData]);
+        if (allCustomers.length > 0 && !selectedCustomer) {
+            setSelectedCustomer(allCustomers[0]);
+        }
+    }, [allCustomers, selectedCustomer]);
 
     useEffect(() => {
         if (selectedCustomer) {
@@ -119,8 +101,7 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert, onEditQuote }) =
             showAlert('Cliente aggiunto con successo!', 'success');
             setIsCustomerModalOpen(false);
             setNewCustomer({ ragioneSociale: '', piva: '', codiceFiscale: '', indirizzo: '', citta: '', cap: '', provincia: '', email: '', telefono: '' });
-            const updatedCustomers = await api.getCustomers();
-            setCustomers(updatedCustomers);
+            onDataChange();
             setSelectedCustomer(addedCustomer);
         } catch (error) {
             showAlert(error instanceof Error ? error.message : 'Errore sconosciuto', 'error');
@@ -306,7 +287,7 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert, onEditQuote }) =
         }
     };
     
-    if (isLoadingCustomers) return <Spinner />;
+    if (isLoadingSites && sites.length === 0) return <Spinner />;
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -322,7 +303,7 @@ const CustomerView: React.FC<CustomerViewProps> = ({ showAlert, onEditQuote }) =
                     </button>
                 </div>
                 <ul className="space-y-2 max-h-[60vh] overflow-y-auto">
-                    {customers.map(customer => (
+                    {allCustomers.map(customer => (
                         <li key={customer.id}><button onClick={() => setSelectedCustomer(customer)} className={`w-full text-left p-3 rounded-md transition ${selectedCustomer?.id === customer.id ? 'bg-indigo-100 text-indigo-800' : 'hover:bg-gray-100'}`}><p className="font-semibold">{customer.ragioneSociale}</p><p className="text-sm text-gray-600">P.IVA: {customer.piva}</p></button></li>
                     ))}
                 </ul>

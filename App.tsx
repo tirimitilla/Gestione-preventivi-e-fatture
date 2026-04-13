@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ShopInfo, Category, Product, QuoteItem, PurchaseItem, Quote } from './types';
+import { ShopInfo, Category, Product, QuoteItem, PurchaseItem, Quote, Customer } from './types';
 import * as api from './services/apiService';
 import Header from './components/Header';
 import InventoryView from './components/InventoryView';
@@ -40,6 +40,8 @@ const App: React.FC = () => {
     vatRate: 22
   });
   const [categories, setCategories] = useState<Category[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
   const [orderItems, setOrderItems] = useState<PurchaseItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,20 +77,32 @@ const App: React.FC = () => {
     }
   };
 
-  const loadInitialData = useCallback(async () => {
-    setIsLoading(true);
+  const loadInitialData = useCallback(async (retryCount = 0) => {
+    if (retryCount === 0) setIsLoading(true);
+    
     try {
-      const cats = await api.getCategories();
-      const [info] = await Promise.all([
+      const [cats, info, products, customers] = await Promise.all([
+        api.getCategories(),
         api.getHeaderInfo(),
+        api.getAllProducts(),
+        api.getCustomers()
       ]);
-      setShopInfo(info);
+      
       setCategories(cats);
-    } catch (error: any) {
-      console.error("Error loading initial data:", error);
-      showAlert(`Errore nel caricamento dei dati: ${error.message || 'Errore sconosciuto'}`, 'error');
-    } finally {
+      setShopInfo(info);
+      setAllProducts(products);
+      setAllCustomers(customers);
       setIsLoading(false);
+    } catch (error: any) {
+      console.error(`Error loading initial data (attempt ${retryCount + 1}):`, error);
+      
+      if (retryCount < 2) {
+        // Silent retry for the first few attempts to handle Supabase cold start
+        setTimeout(() => loadInitialData(retryCount + 1), 2000);
+      } else {
+        showAlert(`Errore nel caricamento dei dati: ${error.message || 'Errore di connessione'}. Riprova tra qualche istante.`, 'error');
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -182,11 +196,16 @@ const App: React.FC = () => {
               categories={categories}
               setCategories={setCategories}
               showAlert={showAlert}
+              onProductsChange={() => loadInitialData()}
+              allCustomers={allCustomers}
             />
           )}
           {activeTab === Tab.QuoteBuilder && (
             <QuoteBuilderView 
               categories={categories}
+              allProducts={allProducts}
+              allCustomers={allCustomers}
+              shopInfo={shopInfo}
               quoteItems={quoteItems}
               setQuoteItems={setQuoteItems}
               showAlert={showAlert}
@@ -198,12 +217,16 @@ const App: React.FC = () => {
               }}
               onQuoteSaved={() => {
                 setEditingQuote(null);
+                loadInitialData();
               }}
             />
           )}
           {activeTab === Tab.ProformaInvoice && (
             <QuoteBuilderView 
               categories={categories}
+              allProducts={allProducts}
+              allCustomers={allCustomers}
+              shopInfo={shopInfo}
               quoteItems={quoteItems}
               setQuoteItems={setQuoteItems}
               showAlert={showAlert}
@@ -215,20 +238,34 @@ const App: React.FC = () => {
               }}
               onQuoteSaved={() => {
                 setEditingQuote(null);
+                loadInitialData();
               }}
             />
           )}
           {activeTab === Tab.Customers && (
-            <CustomerView showAlert={showAlert} onEditQuote={handleEditQuote} />
+            <CustomerView 
+              showAlert={showAlert} 
+              onEditQuote={handleEditQuote} 
+              allCustomers={allCustomers}
+              allProducts={allProducts}
+              onDataChange={() => loadInitialData()}
+            />
           )}
           {activeTab === Tab.Purchases && (
-            <PurchaseView showAlert={showAlert} />
+            <PurchaseView 
+              showAlert={showAlert} 
+              allProducts={allProducts}
+              allCustomers={allCustomers}
+            />
           )}
           {activeTab === Tab.OrderMaterials && (
             <OrderMaterialsView
               orderItems={orderItems}
               setOrderItems={setOrderItems}
               showAlert={showAlert}
+              allProducts={allProducts}
+              allCustomers={allCustomers}
+              shopInfo={shopInfo}
             />
           )}
         </div>

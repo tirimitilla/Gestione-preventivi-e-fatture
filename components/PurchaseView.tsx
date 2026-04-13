@@ -7,14 +7,15 @@ import Spinner from './Spinner';
 
 interface PurchaseViewProps {
   showAlert: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
+  allProducts: Product[];
+  allCustomers: Customer[];
 }
 
-const PurchaseView: React.FC<PurchaseViewProps> = ({ showAlert }) => {
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+const PurchaseView: React.FC<PurchaseViewProps> = ({ showAlert, allProducts: initialProducts, allCustomers }) => {
+  const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [customerSites, setCustomerSites] = useState<ConstructionSite[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedSiteId, setSelectedSiteId] = useState<string>('');
@@ -23,28 +24,15 @@ const PurchaseView: React.FC<PurchaseViewProps> = ({ showAlert }) => {
   const [purchaseHistory, setPurchaseHistory] = useState<Purchase[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-  const loadInitialData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-        const [products, customers] = await Promise.all([
-            api.getAllProducts(),
-            api.getCustomers()
-        ]);
-        setAllProducts(products);
-        setAllCustomers(customers);
-        if (customers.length > 0) {
-            setSelectedCustomerId(customers[0].id);
-        }
-    } catch (error) {
-        showAlert('Errore nel caricamento dati', 'error');
-    } finally {
-        setIsLoading(false);
-    }
-  }, [showAlert]);
+  useEffect(() => {
+    setAllProducts(initialProducts);
+  }, [initialProducts]);
 
   useEffect(() => {
-    loadInitialData();
-  }, [loadInitialData]);
+    if (allCustomers.length > 0 && !selectedCustomerId) {
+        setSelectedCustomerId(allCustomers[0].id);
+    }
+  }, [allCustomers, selectedCustomerId]);
 
   useEffect(() => {
     const fetchSites = async () => {

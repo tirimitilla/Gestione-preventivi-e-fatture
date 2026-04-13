@@ -11,45 +11,40 @@ interface OrderMaterialsViewProps {
   orderItems: PurchaseItem[];
   setOrderItems: React.Dispatch<React.SetStateAction<PurchaseItem[]>>;
   showAlert: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
+  allProducts: Product[];
+  allCustomers: Customer[];
+  shopInfo: ShopInfo | null;
 }
 
-const OrderMaterialsView: React.FC<OrderMaterialsViewProps> = ({ orderItems, setOrderItems, showAlert }) => {
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+const OrderMaterialsView: React.FC<OrderMaterialsViewProps> = ({ 
+  orderItems, 
+  setOrderItems, 
+  showAlert,
+  allProducts: initialProducts,
+  allCustomers,
+  shopInfo: initialShopInfo
+}) => {
+  const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [customerSites, setCustomerSites] = useState<ConstructionSite[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedSiteId, setSelectedSiteId] = useState<string>('');
 
   const [orderDate, setOrderDate] = useState(new Date().toISOString().slice(0, 10));
-  const [shopInfo, setShopInfo] = useState<ShopInfo | null>(null);
+  const [shopInfo, setShopInfo] = useState<ShopInfo | null>(initialShopInfo);
+
+  useEffect(() => {
+    setAllProducts(initialProducts);
+  }, [initialProducts]);
+
+  useEffect(() => {
+    setShopInfo(initialShopInfo);
+  }, [initialShopInfo]);
   
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('');
-
-  const loadInitialData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-        const [products, customers, info] = await Promise.all([
-            api.getAllProducts(),
-            api.getCustomers(),
-            api.getHeaderInfo()
-        ]);
-        setAllProducts(products);
-        setAllCustomers(customers);
-        setShopInfo(info);
-    } catch (error) {
-        showAlert('Errore nel caricamento dati', 'error');
-    } finally {
-        setIsLoading(false);
-    }
-  }, [showAlert]);
-
-  useEffect(() => {
-    loadInitialData();
-  }, [loadInitialData]);
 
   useEffect(() => {
     const fetchSites = async () => {
