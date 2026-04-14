@@ -96,11 +96,20 @@ const App: React.FC = () => {
     } catch (error: any) {
       console.error(`Error loading initial data (attempt ${retryCount + 1}):`, error);
       
+      let errorMessage = error.message || 'Errore di connessione';
+      
+      // Specific check for missing tables (common when moving to a new project)
+      if (errorMessage.includes('relation') && errorMessage.includes('does not exist')) {
+        errorMessage = "Le tabelle non esistono nel nuovo database. Devi eseguire lo script SQL in Supabase.";
+      } else if (errorMessage.includes('401') || errorMessage.includes('Invalid API key')) {
+        errorMessage = "Chiave API Supabase non valida. Controlla le variabili d'ambiente su Vercel.";
+      }
+
       if (retryCount < 2) {
         // Silent retry for the first few attempts to handle Supabase cold start
         setTimeout(() => loadInitialData(retryCount + 1), 2000);
       } else {
-        showAlert(`Errore nel caricamento dei dati: ${error.message || 'Errore di connessione'}. Riprova tra qualche istante.`, 'error');
+        showAlert(`Errore: ${errorMessage}`, 'error');
         setIsLoading(false);
       }
     }
