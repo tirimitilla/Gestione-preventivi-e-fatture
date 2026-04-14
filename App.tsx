@@ -2,11 +2,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ShopInfo, Category, Product, QuoteItem, PurchaseItem, Quote, Customer } from './types';
 import * as api from './services/apiService';
+import { isConfigured } from './services/supabase';
 import Header from './components/Header';
 import InventoryView from './components/InventoryView';
 import QuoteBuilderView from './components/QuoteBuilderView';
 import { AlertTriangle, CheckCircle, Info, XCircle, ChevronDown } from './components/icons';
 import Alert from './components/Alert';
+import Spinner from './components/Spinner';
 import CustomerView from './components/CustomerView';
 import PurchaseView from './components/PurchaseView';
 import OrderMaterialsView from './components/OrderMaterialsView';
@@ -78,6 +80,10 @@ const App: React.FC = () => {
   };
 
   const loadInitialData = useCallback(async (retryCount = 0) => {
+    if (!isConfigured) {
+      setIsLoading(false);
+      return;
+    }
     if (retryCount === 0) setIsLoading(true);
     
     try {
@@ -147,13 +153,62 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header shopInfo={shopInfo} onSave={handleShopInfoSave} />
-      
-      {renderAlert()}
+      {!isConfigured ? (
+        <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 border border-gray-200 transform transition-all">
+            <div className="flex justify-center mb-6">
+              <div className="p-4 bg-amber-50 rounded-full animate-pulse">
+                <AlertTriangle className="h-12 w-12 text-amber-500" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-extrabold text-center text-gray-900 mb-2">Configurazione Richiesta</h1>
+            <p className="text-gray-500 text-center mb-8 text-sm">
+              L'applicazione non è ancora connessa al database. Segui i passaggi sotto per iniziare.
+            </p>
+            
+            <div className="space-y-6">
+              <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                <h3 className="text-indigo-900 font-bold text-sm mb-3 flex items-center">
+                  <Info className="h-4 w-4 mr-2" />
+                  Passaggi per risolvere:
+                </h3>
+                <ol className="text-sm text-indigo-800 space-y-3 list-decimal list-inside">
+                  <li>Vai nelle <b>Impostazioni</b> (Settings)</li>
+                  <li>Cerca la sezione <b>Environment Variables</b></li>
+                  <li>Aggiungi <code>VITE_SUPABASE_URL</code></li>
+                  <li>Aggiungi <code>VITE_SUPABASE_ANON_KEY</code></li>
+                  <li>Salva e fai il <b>Redeploy</b> su Vercel</li>
+                </ol>
+              </div>
+              
+              <div className="text-center">
+                <p className="text-xs text-gray-400 mb-4">
+                  Una volta configurato, l'app caricherà automaticamente i tuoi dati.
+                </p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-indigo-200"
+                >
+                  Ho configurato, ricarica app
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : isLoading ? (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+          <Spinner />
+          <p className="mt-4 text-gray-500 font-medium animate-pulse">Caricamento dati in corso...</p>
+        </div>
+      ) : (
+        <>
+          <Header shopInfo={shopInfo} onSave={handleShopInfoSave} />
+          
+          {renderAlert()}
 
-      <main className="p-4 mx-auto max-w-7xl">
-        <div className="mb-6">
-            <div ref={menuRef} className="relative inline-block text-left w-full sm:w-auto">
+          <main className="p-4 mx-auto max-w-7xl">
+            <div className="mb-6">
+                <div ref={menuRef} className="relative inline-block text-left w-full sm:w-auto">
               <div>
                 <button
                   type="button"
@@ -279,6 +334,8 @@ const App: React.FC = () => {
           )}
         </div>
       </main>
+      </>
+      )}
     </div>
   );
 };
