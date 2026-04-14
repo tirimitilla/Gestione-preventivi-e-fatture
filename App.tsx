@@ -167,29 +167,37 @@ const App: React.FC = () => {
             </p>
             
             <div className="space-y-6">
-              <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+              <div className="bg-indigo-50 p-5 rounded-xl border border-indigo-100">
                 <h3 className="text-indigo-900 font-bold text-sm mb-3 flex items-center">
                   <Info className="h-4 w-4 mr-2" />
-                  Passaggi per risolvere:
+                  Dove inserire le chiavi:
                 </h3>
-                <ol className="text-sm text-indigo-800 space-y-3 list-decimal list-inside">
-                  <li>Vai nelle <b>Impostazioni</b> (Settings)</li>
-                  <li>Cerca la sezione <b>Environment Variables</b></li>
-                  <li>Aggiungi <code>VITE_SUPABASE_URL</code></li>
-                  <li>Aggiungi <code>VITE_SUPABASE_ANON_KEY</code></li>
-                  <li>Salva e fai il <b>Redeploy</b> su Vercel</li>
-                </ol>
+                <div className="space-y-4 text-sm text-indigo-800">
+                  <div>
+                    <p className="font-semibold mb-1">1. Su AI Studio (Anteprima):</p>
+                    <p className="text-xs opacity-80">Clicca sull'icona <b>"Settings"</b> (ingranaggio) in alto a destra e aggiungi le variabili nella sezione <b>"Secrets"</b>.</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold mb-1">2. Su Vercel (Sito Live):</p>
+                    <p className="text-xs opacity-80">Vai nel pannello del progetto su Vercel, in <b>Settings &gt; Environment Variables</b>. Dopo averle salvate, fai un <b>Redeploy</b>.</p>
+                  </div>
+                </div>
               </div>
               
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">Nomi delle variabili:</p>
+                <div className="grid grid-cols-1 gap-2">
+                  <code className="text-[10px] bg-white p-2 rounded border border-gray-200 block">VITE_SUPABASE_URL</code>
+                  <code className="text-[10px] bg-white p-2 rounded border border-gray-200 block">VITE_SUPABASE_ANON_KEY</code>
+                </div>
+              </div>
+
               <div className="text-center">
-                <p className="text-xs text-gray-400 mb-4">
-                  Una volta configurato, l'app caricherà automaticamente i tuoi dati.
-                </p>
                 <button 
                   onClick={() => window.location.reload()}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-indigo-200"
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-200 active:scale-95"
                 >
-                  Ho configurato, ricarica app
+                  Ho configurato, ricarica ora
                 </button>
               </div>
             </div>
