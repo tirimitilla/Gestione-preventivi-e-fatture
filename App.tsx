@@ -47,6 +47,7 @@ const App: React.FC = () => {
   const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
   const [orderItems, setOrderItems] = useState<PurchaseItem[]>([]);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [alert, setAlert] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Inventory);
@@ -65,16 +66,40 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false);
-      }
+    const handleBeforeInstall = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
     };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        showAlert('App installata correttamente!', 'success');
+      }
+      setDeferredPrompt(null);
+    } else {
+      // Logic for iOS or already installed
+      showAlert('Per installare su iOS: clicca l\'icona Condividi e seleziona "Aggiungi alla schermata Home"', 'info');
+    }
+  };
+
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      setIsMenuOpen(false);
+    }
+  }, []);
+
+  useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [handleClickOutside]);
 
   const showAlert = (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
     setAlert({ message, type });
@@ -216,7 +241,14 @@ const App: React.FC = () => {
         </div>
       ) : (
         <>
-          <Header shopInfo={shopInfo} onSave={handleShopInfoSave} onLogout={handleLogout} user={user} />
+          <Header 
+            shopInfo={shopInfo} 
+            onSave={handleShopInfoSave} 
+            onLogout={handleLogout} 
+            user={user} 
+            onInstall={handleInstallApp}
+            isInstallable={!!deferredPrompt}
+          />
           
           {renderAlert()}
 

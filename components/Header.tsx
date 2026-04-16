@@ -3,16 +3,18 @@ import React, { useState } from 'react';
 import { ShopInfo } from '../types';
 import { User } from 'firebase/auth';
 import Modal from './Modal';
-import { EditIcon, FolderIcon, LogOutIcon } from './icons';
+import { EditIcon, FolderIcon, LogOutIcon, DownloadIcon } from './icons';
 
 interface HeaderProps {
   shopInfo: ShopInfo;
   onSave: (newInfo: Omit<ShopInfo, 'name'>) => void;
   onLogout: () => void;
   user: User;
+  onInstall: () => void;
+  isInstallable: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ shopInfo, onSave, onLogout, user }) => {
+const Header: React.FC<HeaderProps> = ({ shopInfo, onSave, onLogout, user, onInstall, isInstallable }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [companyName, setCompanyName] = useState(shopInfo.companyName);
   const [description, setDescription] = useState(shopInfo.description);
@@ -64,6 +66,15 @@ const Header: React.FC<HeaderProps> = ({ shopInfo, onSave, onLogout, user }) => 
             )}
             <span className="text-xs font-medium truncate max-w-[100px]">{user.displayName || user.email}</span>
           </div>
+
+          <button
+            onClick={onInstall}
+            className={`flex items-center ${isInstallable ? 'bg-green-500/20 hover:bg-green-500/30 border-green-500/30' : 'bg-white/10 hover:bg-white/20 border-white/20'} text-white font-semibold py-2 px-3 border rounded-lg shadow-sm transition-all duration-200`}
+            title={isInstallable ? "Installa App" : "Come installare"}
+          >
+            <DownloadIcon className={`h-4 w-4 ${isInstallable ? 'animate-bounce' : ''}`} />
+            <span className="hidden md:inline ml-2 text-sm">{isInstallable ? 'Scarica App' : 'Installa'}</span>
+          </button>
           
           <button
             onClick={handleOpen}
