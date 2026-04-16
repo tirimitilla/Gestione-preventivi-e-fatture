@@ -1,0 +1,187 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: shop_info
+// Document ID: settings
+// Fields:
+//   - name: string (required)
+//   - companyName: string (required)
+//   - description: string
+//   - codiceFiscale: string
+//   - iban: string
+//   - paymentConditions: string
+//   - vatRate: number (required)
+//
+// Collection: categories
+// Fields:
+//   - name: string (required)
+//   - profitMargin: number
+//   - vatRate: number
+//   - createdAt: timestamp
+//
+// Collection: products
+// Fields:
+//   - categoryId: string (required)
+//   - codiceProdotto: string (required, unique)
+//   - prodotto: string (required)
+//   - quantita: number
+//   - prezzoAcquisto: number
+//   - prezzoVendita: number
+//   - createdAt: timestamp
+//
+// Collection: customers
+// Fields:
+//   - ragioneSociale: string (required)
+//   - piva: string
+//   - codiceFiscale: string
+//   - indirizzo: string
+//   - citta: string
+//   - cap: string
+//   - provincia: string
+//   - email: string
+//   - telefono: string
+//   - createdAt: timestamp
+//
+// Collection: construction_sites
+// Fields:
+//   - customerId: string (required)
+//   - nome: string (required)
+//   - indirizzo: string
+//   - materialeDaAcquistare: array
+//   - createdAt: timestamp
+//
+// Collection: quotes
+// Fields:
+//   - quoteNumber: string (required, unique)
+//   - customerId: string (required)
+//   - siteId: string
+//   - date: string (required)
+//   - items: array (required)
+//   - notes: string
+//   - subtotal: number (required)
+//   - tax: number (required)
+//   - total: number (required)
+//   - vatRate: number (required)
+//   - includeVat: boolean
+//   - documentType: string (enum: quote, proforma)
+//   - createdAt: timestamp
+//
+// Collection: purchases
+// Fields:
+//   - customerId: string (required)
+//   - siteId: string (required)
+//   - date: string (required)
+//   - items: array (required)
+//   - total: number (required)
+//   - createdAt: timestamp
+//
+// Collection: document_history
+// Fields:
+//   - signature: string (required, unique)
+//   - createdAt: timestamp
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email == "vincenzo.baggiano@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidShopInfo(data) {
+      return data.companyName is string && data.companyName.size() > 0 && data.companyName.size() < 200 &&
+             data.vatRate is number && data.vatRate >= 0 && data.vatRate <= 100;
+    }
+
+    function isValidCategory(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.profitMargin is number &&
+             data.vatRate is number;
+    }
+
+    function isValidProduct(data) {
+      return data.codiceProdotto is string && data.codiceProdotto.size() > 0 && data.codiceProdotto.size() < 100 &&
+             data.prodotto is string && data.prodotto.size() > 0 && data.prodotto.size() < 500 &&
+             data.quantita is number &&
+             data.prezzoAcquisto is number &&
+             data.prezzoVendita is number;
+    }
+
+    function isValidCustomer(data) {
+      return data.ragioneSociale is string && data.ragioneSociale.size() > 0 && data.ragioneSociale.size() < 200;
+    }
+
+    function isValidQuote(data) {
+      return data.quoteNumber is string && data.quoteNumber.size() > 0 &&
+             data.total is number && data.total >= 0;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /shop_info/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidShopInfo(request.resource.data);
+    }
+
+    match /categories/{catId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidCategory(request.resource.data);
+    }
+
+    match /products/{prodId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidProduct(request.resource.data);
+    }
+
+    match /customers/{custId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidCustomer(request.resource.data);
+    }
+
+    match /construction_sites/{siteId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /quotes/{quoteId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidQuote(request.resource.data);
+    }
+
+    match /purchases/{purchaseId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /document_history/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+  }
+}

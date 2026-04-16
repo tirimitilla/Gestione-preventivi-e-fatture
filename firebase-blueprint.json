@@ -1,0 +1,149 @@
+{
+  "entities": {
+    "ShopInfo": {
+      "title": "ShopInfo",
+      "description": "General company information for document headers",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "companyName": { "type": "string" },
+        "description": { "type": "string" },
+        "codiceFiscale": { "type": "string" },
+        "iban": { "type": "string" },
+        "paymentConditions": { "type": "string" },
+        "vatRate": { "type": "number" }
+      },
+      "required": ["companyName", "vatRate"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product category with default margins and tax rates",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "profitMargin": { "type": "number" },
+        "vatRate": { "type": "number" }
+      },
+      "required": ["name"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Inventory product details",
+      "type": "object",
+      "properties": {
+        "categoryId": { "type": "string" },
+        "codiceProdotto": { "type": "string" },
+        "prodotto": { "type": "string" },
+        "quantita": { "type": "number" },
+        "prezzoAcquisto": { "type": "number" },
+        "prezzoVendita": { "type": "number" }
+      },
+      "required": ["codiceProdotto", "prodotto"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer contact and tax information",
+      "type": "object",
+      "properties": {
+        "ragioneSociale": { "type": "string" },
+        "piva": { "type": "string" },
+        "codiceFiscale": { "type": "string" },
+        "indirizzo": { "type": "string" },
+        "citta": { "type": "string" },
+        "cap": { "type": "string" },
+        "provincia": { "type": "string" },
+        "email": { "type": "string" },
+        "telefono": { "type": "string" }
+      },
+      "required": ["ragioneSociale"]
+    },
+    "ConstructionSite": {
+      "title": "ConstructionSite",
+      "description": "A specific site linked to a customer",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "nome": { "type": "string" },
+        "indirizzo": { "type": "string" },
+        "materialeDaAcquistare": { "type": "array" }
+      },
+      "required": ["customerId", "nome"]
+    },
+    "Quote": {
+      "title": "Quote",
+      "description": "A quote or proforma invoice document",
+      "type": "object",
+      "properties": {
+        "quoteNumber": { "type": "string" },
+        "customerId": { "type": "string" },
+        "siteId": { "type": "string" },
+        "date": { "type": "string" },
+        "items": { "type": "array" },
+        "notes": { "type": "string" },
+        "subtotal": { "type": "number" },
+        "tax": { "type": "number" },
+        "total": { "type": "number" },
+        "vatRate": { "type": "number" },
+        "includeVat": { "type": "boolean" },
+        "documentType": { "type": "string", "enum": ["quote", "proforma"] }
+      },
+      "required": ["quoteNumber", "customerId", "date", "total"]
+    },
+    "Purchase": {
+      "title": "Purchase",
+      "description": "Record of materials purchased for a site",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "siteId": { "type": "string" },
+        "date": { "type": "string" },
+        "items": { "type": "array" },
+        "total": { "type": "number" }
+      },
+      "required": ["customerId", "siteId", "date", "total"]
+    },
+    "DocumentHistory": {
+      "title": "DocumentHistory",
+      "description": "Signature of uploaded documents to prevent duplicates",
+      "type": "object",
+      "properties": {
+        "signature": { "type": "string" }
+      },
+      "required": ["signature"]
+    }
+  },
+  "firestore": {
+    "shop_info": {
+      "schema": "ShopInfo",
+      "description": "Singleton collection for shop settings"
+    },
+    "categories": {
+      "schema": "Category",
+      "description": "Product categories"
+    },
+    "products": {
+      "schema": "Product",
+      "description": "Inventory products"
+    },
+    "customers": {
+      "schema": "Customer",
+      "description": "Customer records"
+    },
+    "construction_sites": {
+      "schema": "ConstructionSite",
+      "description": "Construction sites linked to customers"
+    },
+    "quotes": {
+      "schema": "Quote",
+      "description": "Quotes and proforma invoices"
+    },
+    "purchases": {
+      "schema": "Purchase",
+      "description": "Purchase records"
+    },
+    "document_history": {
+      "schema": "DocumentHistory",
+      "description": "History of imported document signatures"
+    }
+  }
+}

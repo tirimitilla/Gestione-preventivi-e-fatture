@@ -1,15 +1,18 @@
 
 import React, { useState } from 'react';
 import { ShopInfo } from '../types';
+import { User } from 'firebase/auth';
 import Modal from './Modal';
-import { EditIcon, FolderIcon } from './icons';
+import { EditIcon, FolderIcon, LogOutIcon } from './icons';
 
 interface HeaderProps {
   shopInfo: ShopInfo;
   onSave: (newInfo: Omit<ShopInfo, 'name'>) => void;
+  onLogout: () => void;
+  user: User;
 }
 
-const Header: React.FC<HeaderProps> = ({ shopInfo, onSave }) => {
+const Header: React.FC<HeaderProps> = ({ shopInfo, onSave, onLogout, user }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [companyName, setCompanyName] = useState(shopInfo.companyName);
   const [description, setDescription] = useState(shopInfo.description);
@@ -50,13 +53,34 @@ const Header: React.FC<HeaderProps> = ({ shopInfo, onSave }) => {
                 <p className="text-sm opacity-90">{shopInfo.description}</p>
             </div>
         </div>
-        <button
-          onClick={handleOpen}
-          className="flex items-center bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-4 border border-white/30 rounded-lg shadow-sm transition-all duration-200"
-        >
-          <EditIcon className="h-4 w-4 mr-2" />
-          Modifica
-        </button>
+        <div className="flex items-center space-x-4">
+          <div className="hidden sm:flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
+            {user.photoURL ? (
+              <img src={user.photoURL} alt={user.displayName || ''} className="h-6 w-6 rounded-full" />
+            ) : (
+              <div className="h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center text-[10px] font-bold">
+                {user.displayName?.charAt(0) || user.email?.charAt(0)}
+              </div>
+            )}
+            <span className="text-xs font-medium truncate max-w-[100px]">{user.displayName || user.email}</span>
+          </div>
+          
+          <button
+            onClick={handleOpen}
+            className="flex items-center bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-4 border border-white/30 rounded-lg shadow-sm transition-all duration-200"
+          >
+            <EditIcon className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Modifica</span>
+          </button>
+
+          <button
+            onClick={onLogout}
+            className="flex items-center bg-red-500/20 hover:bg-red-500/40 text-white font-semibold py-2 px-3 border border-red-500/30 rounded-lg shadow-sm transition-all duration-200"
+            title="Esci"
+          >
+            <LogOutIcon className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Modifica Intestazione">

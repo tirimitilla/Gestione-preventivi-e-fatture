@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ShopInfo, Category, Product, QuoteItem, PurchaseItem, Quote, Customer } from './types';
 import * as api from './services/apiService';
-import { isConfigured } from './services/supabase';
+import { auth, googleProvider } from './firebase';
+import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
 import Header from './components/Header';
 import InventoryView from './components/InventoryView';
 import QuoteBuilderView from './components/QuoteBuilderView';
@@ -50,8 +51,18 @@ const App: React.FC = () => {
   const [alert, setAlert] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Inventory);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -80,7 +91,7 @@ const App: React.FC = () => {
   };
 
   const loadInitialData = useCallback(async (retryCount = 0) => {
-    if (!isConfigured) {
+    if (!user) {
       setIsLoading(false);
       return;
     }
@@ -122,13 +133,31 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    if (!supabaseUrl || !supabaseKey) {
-      showAlert('Configurazione Supabase mancante. Verifica le impostazioni (VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY).', 'warning');
+    if (isAuthReady && user) {
+      loadInitialData();
+    } else if (isAuthReady && !user) {
+      setIsLoading(false);
     }
-    loadInitialData();
-  }, [loadInitialData]);
+  }, [loadInitialData, isAuthReady, user]);
+
+  const handleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      showAlert('Errore durante il login con Google', 'error');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setAllCustomers([]);
+      setAllProducts([]);
+      setCategories([]);
+    } catch (error) {
+      showAlert('Errore durante il logout', 'error');
+    }
+  };
 
   const handleShopInfoSave = async (newInfo: Omit<ShopInfo, 'name'>) => {
     try {
@@ -153,54 +182,31 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {!isConfigured ? (
-        <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-50 to-gray-100">
-          <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 border border-gray-200 transform transition-all">
-            <div className="flex justify-center mb-6">
-              <div className="p-4 bg-amber-50 rounded-full animate-pulse">
-                <AlertTriangle className="h-12 w-12 text-amber-500" />
+      {!isAuthReady ? (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+          <Spinner />
+          <p className="mt-4 text-gray-500 font-medium animate-pulse">Inizializzazione...</p>
+        </div>
+      ) : !user ? (
+        <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-indigo-500 to-purple-600">
+          <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 text-center">
+            <div className="mb-8">
+              <div className="inline-flex p-4 bg-indigo-100 rounded-full mb-4">
+                <CheckCircle className="h-12 w-12 text-indigo-600" />
               </div>
+              <h1 className="text-3xl font-extrabold text-gray-900">Benvenuto</h1>
+              <p className="text-gray-500 mt-2">Accedi per gestire i tuoi preventivi e clienti</p>
             </div>
-            <h1 className="text-2xl font-extrabold text-center text-gray-900 mb-2">Configurazione Richiesta</h1>
-            <p className="text-gray-500 text-center mb-8 text-sm">
-              L'applicazione non è ancora connessa al database. Segui i passaggi sotto per iniziare.
+            <button 
+              onClick={handleLogin}
+              className="w-full flex items-center justify-center gap-3 py-4 bg-white border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
+              Accedi con Google
+            </button>
+            <p className="mt-8 text-xs text-gray-400">
+              Utilizziamo Firebase per garantire la massima sicurezza dei tuoi dati.
             </p>
-            
-            <div className="space-y-6">
-              <div className="bg-indigo-50 p-5 rounded-xl border border-indigo-100">
-                <h3 className="text-indigo-900 font-bold text-sm mb-3 flex items-center">
-                  <Info className="h-4 w-4 mr-2" />
-                  Dove inserire le chiavi:
-                </h3>
-                <div className="space-y-4 text-sm text-indigo-800">
-                  <div>
-                    <p className="font-semibold mb-1">1. Su AI Studio (Anteprima):</p>
-                    <p className="text-xs opacity-80">Clicca sull'icona <b>"Settings"</b> (ingranaggio) in alto a destra e aggiungi le variabili nella sezione <b>"Secrets"</b>.</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold mb-1">2. Su Vercel (Sito Live):</p>
-                    <p className="text-xs opacity-80">Vai nel pannello del progetto su Vercel, in <b>Settings &gt; Environment Variables</b>. Dopo averle salvate, fai un <b>Redeploy</b>.</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">Nomi delle variabili:</p>
-                <div className="grid grid-cols-1 gap-2">
-                  <code className="text-[10px] bg-white p-2 rounded border border-gray-200 block">VITE_SUPABASE_URL</code>
-                  <code className="text-[10px] bg-white p-2 rounded border border-gray-200 block">VITE_SUPABASE_ANON_KEY</code>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-200 active:scale-95"
-                >
-                  Ho configurato, ricarica ora
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       ) : isLoading ? (
@@ -210,7 +216,7 @@ const App: React.FC = () => {
         </div>
       ) : (
         <>
-          <Header shopInfo={shopInfo} onSave={handleShopInfoSave} />
+          <Header shopInfo={shopInfo} onSave={handleShopInfoSave} onLogout={handleLogout} user={user} />
           
           {renderAlert()}
 
