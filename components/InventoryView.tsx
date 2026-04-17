@@ -60,11 +60,10 @@ const InventoryView: React.FC<InventoryViewProps> = ({ categories, setCategories
   const handleAddCategory = async (categoryName: string, profitMargin: number, vatRate: number) => {
     try {
       const newCategory = await api.createCategory(categoryName, profitMargin, vatRate);
-      setCategories(prev => [...prev, newCategory]);
       showAlert('Categoria creata con successo', 'success');
       return newCategory;
     } catch (error) {
-      showAlert('Errore: Categoria già esistente', 'error');
+      showAlert(error instanceof Error ? error.message : 'Errore nella creazione della categoria', 'error');
       throw error;
     }
   };

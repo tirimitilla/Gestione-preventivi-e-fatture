@@ -97,7 +97,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && 
-        (request.auth.token.email == "vincenzo.baggiano@gmail.com" && request.auth.token.email_verified == true);
+        (request.auth.token.email == "vincenzo.baggiano@gmail.com");
     }
 
     function hasRequiredFields(fields) {
@@ -119,16 +119,16 @@ service cloud.firestore {
 
     function isValidCategory(data) {
       return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.profitMargin is number &&
-             data.vatRate is number;
+             (!('profitMargin' in data) || data.profitMargin is number) &&
+             (!('vatRate' in data) || data.vatRate is number);
     }
 
     function isValidProduct(data) {
       return data.codiceProdotto is string && data.codiceProdotto.size() > 0 && data.codiceProdotto.size() < 100 &&
              data.prodotto is string && data.prodotto.size() > 0 && data.prodotto.size() < 500 &&
-             data.quantita is number &&
-             data.prezzoAcquisto is number &&
-             data.prezzoVendita is number;
+             (!('quantita' in data) || data.quantita is number) &&
+             (!('prezzoAcquisto' in data) || data.prezzoAcquisto is number) &&
+             (!('prezzoVendita' in data) || data.prezzoVendita is number);
     }
 
     function isValidCustomer(data) {

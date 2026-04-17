@@ -13,10 +13,38 @@ import {
   orderBy, 
   limit,
   serverTimestamp,
-  increment
+  increment,
+  onSnapshot
 } from 'firebase/firestore';
+
 import { db, auth } from '../firebase';
 import { ShopInfo, Category, Product, Customer, ConstructionSite, Purchase, Quote, SiteMaterial } from '../types';
+
+// --- SUBSCRIPTIONS ---
+
+export const subscribeCategories = (onUpdate: (cats: Category[]) => void) => {
+  const path = 'categories';
+  const q = query(collection(db, path), orderBy('name'));
+  return onSnapshot(q, (snapshot) => {
+    onUpdate(snapshot.docs.map(mapDoc) as Category[]);
+  }, (error) => handleFirestoreError(error, OperationType.GET, path));
+};
+
+export const subscribeAllProducts = (onUpdate: (prods: Product[]) => void) => {
+  const path = 'products';
+  const q = collection(db, path);
+  return onSnapshot(q, (snapshot) => {
+    onUpdate(snapshot.docs.map(mapDoc) as Product[]);
+  }, (error) => handleFirestoreError(error, OperationType.GET, path));
+};
+
+export const subscribeCustomers = (onUpdate: (customers: Customer[]) => void) => {
+  const path = 'customers';
+  const q = query(collection(db, path), orderBy('ragioneSociale'));
+  return onSnapshot(q, (snapshot) => {
+    onUpdate(snapshot.docs.map(mapDoc) as Customer[]);
+  }, (error) => handleFirestoreError(error, OperationType.GET, path));
+};
 
 export const UNCATEGORIZED_CAT_ID = 'da-assegnare-id';
 

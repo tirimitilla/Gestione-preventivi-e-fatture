@@ -115,55 +115,42 @@ const App: React.FC = () => {
     }
   };
 
-  const loadInitialData = useCallback(async (retryCount = 0) => {
+  const loadInitialData = useCallback(async () => {
     if (!user) {
       setIsLoading(false);
       return;
     }
-    if (retryCount === 0) setIsLoading(true);
+    
+    setIsLoading(true);
     
     try {
-      const [cats, info, products, customers] = await Promise.all([
-        api.getCategories(),
-        api.getHeaderInfo(),
-        api.getAllProducts(),
-        api.getCustomers()
-      ]);
-      
-      setCategories(cats);
+      const info = await api.getHeaderInfo();
       setShopInfo(info);
-      setAllProducts(products);
-      setAllCustomers(customers);
       setIsLoading(false);
     } catch (error: any) {
-      console.error(`Error loading initial data (attempt ${retryCount + 1}):`, error);
-      
-      let errorMessage = error.message || 'Errore di connessione';
-      
-      // Specific check for missing tables (common when moving to a new project)
-      if (errorMessage.includes('relation') && errorMessage.includes('does not exist')) {
-        errorMessage = "Le tabelle non esistono nel nuovo database. Devi eseguire lo script SQL in Supabase.";
-      } else if (errorMessage.includes('401') || errorMessage.includes('Invalid API key')) {
-        errorMessage = "Chiave API Supabase non valida. Controlla le variabili d'ambiente su Vercel.";
-      }
-
-      if (retryCount < 2) {
-        // Silent retry for the first few attempts to handle Supabase cold start
-        setTimeout(() => loadInitialData(retryCount + 1), 2000);
-      } else {
-        showAlert(`Errore: ${errorMessage}`, 'error');
-        setIsLoading(false);
-      }
+      console.error(`Error loading header info:`, error);
+      setIsLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (isAuthReady && user) {
       loadInitialData();
+      
+      // Real-time subscriptions
+      const unsubCats = api.subscribeCategories(setCategories);
+      const unsubProducts = api.subscribeAllProducts(setAllProducts);
+      const unsubCustomers = api.subscribeCustomers(setAllCustomers);
+      
+      return () => {
+        unsubCats();
+        unsubProducts();
+        unsubCustomers();
+      };
     } else if (isAuthReady && !user) {
       setIsLoading(false);
     }
-  }, [loadInitialData, isAuthReady, user]);
+  }, [isAuthReady, user, loadInitialData]);
 
   const handleLogin = async () => {
     try {
