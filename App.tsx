@@ -134,13 +134,33 @@ const App: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
+    // Safety timeout to prevent infinite loading screen
+    const timeout = setTimeout(() => {
+      if (isLoading && isAuthReady && user) {
+        console.warn("Loading timeout reached. Forcing isLoading to false.");
+        setIsLoading(false);
+      }
+    }, 8000); // 8 seconds timeout
+
+    return () => clearTimeout(timeout);
+  }, [isLoading, isAuthReady, user]);
+
+  useEffect(() => {
     if (isAuthReady && user) {
       loadInitialData();
       
-      // Real-time subscriptions
-      const unsubCats = api.subscribeCategories(setCategories);
-      const unsubProducts = api.subscribeAllProducts(setAllProducts);
-      const unsubCustomers = api.subscribeCustomers(setAllCustomers);
+      let unsubCats = () => {};
+      let unsubProducts = () => {};
+      let unsubCustomers = () => {};
+
+      try {
+        // Real-time subscriptions
+        unsubCats = api.subscribeCategories(setCategories);
+        unsubProducts = api.subscribeAllProducts(setAllProducts);
+        unsubCustomers = api.subscribeCustomers(setAllCustomers);
+      } catch (err) {
+        console.error("Failed to setup subscriptions:", err);
+      }
       
       return () => {
         unsubCats();
@@ -195,9 +215,15 @@ const App: React.FC = () => {
   return (
     <>
       {!isAuthReady ? (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
           <Spinner />
-          <p className="mt-4 text-gray-500 font-medium animate-pulse">Inizializzazione...</p>
+          <p className="mt-4 text-gray-500 font-medium animate-pulse">Inizializzazione sessione...</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-8 text-xs text-blue-500 hover:underline"
+          >
+            Se la pagina rimane bianca, clicca qui per ricaricare
+          </button>
         </div>
       ) : !user ? (
         <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-blue-500 to-indigo-600">
@@ -219,9 +245,23 @@ const App: React.FC = () => {
           </div>
         </div>
       ) : isLoading ? (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
           <Spinner />
-          <p className="mt-4 text-gray-500 font-medium animate-pulse">Caricamento dati...</p>
+          <p className="mt-4 text-gray-500 font-medium animate-pulse">Caricamento dati in corso...</p>
+          <div className="mt-8 flex flex-col items-center gap-2">
+            <button 
+              onClick={() => setIsLoading(false)} 
+              className="text-xs text-blue-500 hover:underline"
+            >
+              Il caricamento sta impiegando troppo tempo? Clicca qui per forzare l'ingresso
+            </button>
+            <button 
+              onClick={handleLogout} 
+              className="text-xs text-red-500 hover:underline"
+            >
+              Esci e riprova
+            </button>
+          </div>
         </div>
       ) : (
         <div className="min-h-screen bg-gray-50">

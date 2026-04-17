@@ -1,6 +1,6 @@
 {
-  "name": "Gestione Preventivi e Fatture",
-  "description": "Applicazione per la gestione dell'inventario, preventivi e fatturazione proforma.",
+  "name": "Ritrovo da Rocco - Gestione",
+  "description": "Dashboard per la gestione di inventario e preventivi per il ristorante Ritrovo da Rocco.",
   "requestFramePermissions": [
     "camera"
   ]

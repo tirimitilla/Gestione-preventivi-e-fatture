@@ -121,12 +121,12 @@ export const getHeaderInfo = async (): Promise<ShopInfo> => {
     } else {
       // Default info if not exists
       return {
-        name: 'Gestione Preventivi',
-        companyName: '',
-        description: '',
+        name: 'Ritrovo da Rocco',
+        companyName: 'Ritrovo da Rocco di Pizzolante Antonella',
+        description: 'Gestione magazzino e preventivi.',
         codiceFiscale: '',
         iban: '',
-        paymentConditions: '',
+        paymentConditions: 'Visto fattura',
         vatRate: 22,
       };
     }
@@ -140,7 +140,7 @@ export const saveHeaderInfo = async (newInfo: Omit<ShopInfo, 'name'>): Promise<s
   const path = 'shop_info';
   try {
     const docRef = doc(db, path, 'settings');
-    await setDoc(docRef, { ...newInfo, name: 'Gestione Preventivi' }, { merge: true });
+    await setDoc(docRef, { ...newInfo, name: 'Ritrovo da Rocco' }, { merge: true });
     return "Intestazione salvata con successo";
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
