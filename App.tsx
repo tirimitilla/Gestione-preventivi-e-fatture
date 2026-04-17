@@ -34,12 +34,12 @@ const tabNames = {
 
 const App: React.FC = () => {
   const [shopInfo, setShopInfo] = useState<ShopInfo>({
-    name: 'Gestione Preventivi',
-    companyName: '',
-    description: '',
+    name: 'Ritrovo da Rocco',
+    companyName: 'Ritrovo da Rocco di Pizzolante Antonella',
+    description: 'Gestione magazzino e preventivi.',
     codiceFiscale: '',
     iban: '',
-    paymentConditions: '',
+    paymentConditions: 'Contanti / Bonifico',
     vatRate: 22
   });
   const [categories, setCategories] = useState<Category[]>([]);
@@ -193,41 +193,38 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       {!isAuthReady ? (
         <div className="flex flex-col items-center justify-center min-h-screen bg-white">
           <Spinner />
           <p className="mt-4 text-gray-500 font-medium animate-pulse">Inizializzazione...</p>
         </div>
       ) : !user ? (
-        <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-indigo-500 to-purple-600">
+        <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-blue-500 to-indigo-600">
           <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 text-center">
             <div className="mb-8">
-              <div className="inline-flex p-4 bg-indigo-100 rounded-full mb-4">
-                <CheckCircle className="h-12 w-12 text-indigo-600" />
+              <div className="inline-flex p-4 bg-blue-100 rounded-full mb-4">
+                <CheckCircle className="h-12 w-12 text-blue-600" />
               </div>
-              <h1 className="text-3xl font-extrabold text-gray-900">Benvenuto</h1>
-              <p className="text-gray-500 mt-2">Accedi per gestire i tuoi preventivi e clienti</p>
+              <h1 className="text-3xl font-extrabold text-gray-900">Gestione Aziendale</h1>
+              <p className="text-gray-500 mt-2">Accedi per gestire i tuoi dati</p>
             </div>
             <button 
               onClick={handleLogin}
-              className="w-full flex items-center justify-center gap-3 py-4 bg-white border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95"
+              className="w-full flex items-center justify-center gap-3 py-4 bg-white border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95"
             >
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
               Accedi con Google
             </button>
-            <p className="mt-8 text-xs text-gray-400">
-              Utilizziamo Firebase per garantire la massima sicurezza dei tuoi dati.
-            </p>
           </div>
         </div>
       ) : isLoading ? (
         <div className="flex flex-col items-center justify-center min-h-screen bg-white">
           <Spinner />
-          <p className="mt-4 text-gray-500 font-medium animate-pulse">Caricamento dati in corso...</p>
+          <p className="mt-4 text-gray-500 font-medium animate-pulse">Caricamento dati...</p>
         </div>
       ) : (
-        <>
+        <div className="min-h-screen bg-gray-50">
           <Header 
             shopInfo={shopInfo} 
             onSave={handleShopInfoSave} 
@@ -246,7 +243,7 @@ const App: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="inline-flex justify-between w-full sm:w-64 rounded-md border border-gray-300 shadow-sm px-4 py-3 bg-white text-lg font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="inline-flex justify-between w-full sm:w-64 rounded-md border border-gray-300 shadow-sm px-4 py-3 bg-white text-lg font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   id="menu-button"
                   aria-expanded="true"
                   aria-haspopup="true"
@@ -274,7 +271,7 @@ const App: React.FC = () => {
                           setIsMenuOpen(false);
                         }}
                         className={`${
-                          activeTab === tabIndex ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
+                          activeTab === tabIndex ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                         } block w-full text-left px-4 py-3 text-sm font-medium hover:bg-gray-100 hover:text-gray-900`}
                         role="menuitem"
                       >
@@ -367,9 +364,9 @@ const App: React.FC = () => {
           )}
         </div>
       </main>
-      </>
-      )}
     </div>
+    )}
+    </>
   );
 };
 

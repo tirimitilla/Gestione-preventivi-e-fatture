@@ -47,29 +47,29 @@ const Header: React.FC<HeaderProps> = ({ shopInfo, onSave, onLogout, user, onIns
 
   return (
     <>
-      <header className="bg-primary-blue text-white p-4 shadow-md sticky top-0 z-10 flex justify-between items-center">
+      <header className="bg-white p-4 shadow-md sticky top-0 z-40 flex justify-between items-center border-b border-gray-100">
         <div className="flex items-center">
-            <FolderIcon className="h-8 w-8 mr-3 opacity-80" />
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white mr-3">G</div>
             <div>
-                <h1 className="text-xl font-bold">{shopInfo.name}</h1>
-                <p className="text-sm opacity-90">{shopInfo.description}</p>
+                <h1 className="text-xl font-bold text-gray-800">{shopInfo.name}</h1>
+                <p className="text-xs text-gray-500 font-medium">{shopInfo.description}</p>
             </div>
         </div>
-        <div className="flex items-center space-x-4">
-          <div className="hidden sm:flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="hidden lg:flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
             {user.photoURL ? (
               <img src={user.photoURL} alt={user.displayName || ''} className="h-6 w-6 rounded-full" />
             ) : (
-              <div className="h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center text-[10px] font-bold">
+              <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white">
                 {user.displayName?.charAt(0) || user.email?.charAt(0)}
               </div>
             )}
-            <span className="text-xs font-medium truncate max-w-[100px]">{user.displayName || user.email}</span>
+            <span className="text-xs font-semibold truncate max-w-[100px] text-gray-700">{user.displayName || user.email}</span>
           </div>
 
           <button
             onClick={onInstall}
-            className={`flex items-center ${isInstallable ? 'bg-green-500/20 hover:bg-green-500/30 border-green-500/30' : 'bg-white/10 hover:bg-white/20 border-white/20'} text-white font-semibold py-2 px-3 border rounded-lg shadow-sm transition-all duration-200`}
+            className={`flex items-center ${isInstallable ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} font-semibold py-2 px-3 border rounded-lg shadow-sm transition-all duration-200`}
             title={isInstallable ? "Installa App" : "Come installare"}
           >
             <DownloadIcon className={`h-4 w-4 ${isInstallable ? 'animate-bounce' : ''}`} />
@@ -78,7 +78,7 @@ const Header: React.FC<HeaderProps> = ({ shopInfo, onSave, onLogout, user, onIns
           
           <button
             onClick={handleOpen}
-            className="flex items-center bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-4 border border-white/30 rounded-lg shadow-sm transition-all duration-200"
+            className="flex items-center bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200"
           >
             <EditIcon className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Modifica</span>
@@ -86,7 +86,7 @@ const Header: React.FC<HeaderProps> = ({ shopInfo, onSave, onLogout, user, onIns
 
           <button
             onClick={onLogout}
-            className="flex items-center bg-red-500/20 hover:bg-red-500/40 text-white font-semibold py-2 px-3 border border-red-500/30 rounded-lg shadow-sm transition-all duration-200"
+            className="flex items-center bg-red-50 text-red-600 font-semibold py-2 px-3 border border-red-200 rounded-lg shadow-sm hover:bg-red-100 transition-all duration-200"
             title="Esci"
           >
             <LogOutIcon className="h-4 w-4" />
@@ -167,7 +167,7 @@ const Header: React.FC<HeaderProps> = ({ shopInfo, onSave, onLogout, user, onIns
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-primary-blue text-white rounded-md hover:opacity-90 transition"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-semibold"
             >
               Salva
             </button>

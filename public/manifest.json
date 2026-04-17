@@ -1,15 +1,15 @@
 {
-  "short_name": "Gestione Preventivi",
-  "name": "Gestione Preventivi e Fatture",
+  "short_name": "Ritrovo da Rocco",
+  "name": "Ritrovo da Rocco - Bowling & Ristorante",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/appicon/192/192",
+      "src": "https://picsum.photos/seed/rocco/192/192",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "https://picsum.photos/seed/appicon/512/512",
+      "src": "https://picsum.photos/seed/rocco/512/512",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
@@ -17,6 +17,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#1e3a8a",
-  "background_color": "#ffffff"
+  "theme_color": "#E11D48",
+  "background_color": "#0F172A"
 }

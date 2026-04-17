@@ -452,7 +452,7 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
                 </div>
 
                 <div className="mt-6 flex justify-end">
-                    <div className="w-full max-w-sm bg-primary-orange text-gray-800 rounded-lg p-4">
+                    <div className="w-full max-w-sm bg-indigo-50 text-gray-800 rounded-lg p-4 border border-indigo-100">
                         <div className="flex justify-between text-sm py-1">
                             <span>Imponibile:</span>
                             <span className="font-semibold">€{subtotal.toFixed(2)}</span>
@@ -464,7 +464,7 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
                                     id="includeVat"
                                     checked={includeVat}
                                     onChange={(e) => setIncludeVat(e.target.checked)}
-                                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                 />
                                 <label htmlFor="includeVat" className="ml-2">Includi I.V.A.</label>
                             </div>
@@ -475,7 +475,7 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
                             <span className="font-semibold">€{tax.toFixed(2)}</span>
                         </div>
 
-                        <div className="flex justify-between text-lg font-bold py-2 border-t border-gray-700/50 mt-2">
+                        <div className="flex justify-between text-lg font-bold py-2 border-t border-gray-200 mt-2">
                             <span>Totale:</span>
                             <span>€{total.toFixed(2)}</span>
                         </div>
@@ -488,7 +488,7 @@ const QuoteBuilderView: React.FC<QuoteBuilderViewProps> = ({
                         Annulla Modifica
                     </button>
                 )}
-                <button onClick={handleSaveAndPreview} className="inline-flex items-center px-4 py-2 bg-primary-blue text-white font-semibold rounded-md hover:opacity-90 transition">
+                <button onClick={handleSaveAndPreview} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition">
                     <EyeIcon className="h-5 w-5 mr-2" />
                     {editingQuote ? 'Aggiorna e Crea Anteprima' : 'Salva e Crea Anteprima'}
                 </button>
